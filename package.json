@@ -1,0 +1,22 @@
+{
+  "name": "Gj-koa",
+  "version": "0.0.1",
+  "description": "new project",
+  "main": "index.js",
+  "engines": {
+    "node": ">=4.5.0",
+    "npm": "^3.0.0"
+  },
+  "scripts": {
+    "pm2": "pm2"
+  },
+  "betterScripts": {},
+  "dependencies": {
+    "koa": "^1.2.4",
+    "koa-middlewares": "^6.0.0",
+    "koa-route": "^2.4.2",
+    "koa-router": "^5.4.0",
+    "pm2": "^2.3.0"
+  },
+  "devDependencies": {}
+}
