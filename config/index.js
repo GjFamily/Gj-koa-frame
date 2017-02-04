@@ -8,15 +8,18 @@ try {
 let env_config = {
   'development': {
     server_port: process.env.PORT || 3000,
-    debug: true
+    debug: true,
+    mogodb_port: local["mogodb_port"]
   },
   'test': {
     server_port: "",
-    debug: true
+    debug: true,
+    mogodb_port: ''
   },
   'production': {
     server_port: "",
-    debug: false
+    debug: false,
+    mogodb_port: ''
   }
 }
 
