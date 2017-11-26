@@ -24,7 +24,7 @@ function generate(no, type, show, log){
     return err;
   }
 }
-module.exports.AuthException = generate(101, "验证错误", true, false);
-module.exports.ValidException = generate(102, "数据验证错误", true, false);
-module.exports.EmptyException = generate(103, "数据为空", true, false);
-module.exports.SystemException = generate(104, "系统错误", false, true);
+module.exports.AuthException = generate(101, "AUTH_ERROR", true, false);
+module.exports.ValidException = generate(102, "VALID_ERROR", true, false);
+module.exports.EmptyException = generate(103, "EMPTY_ERROR", true, false);
+module.exports.SystemException = generate(104, "SYSTEM_ERROR", false, true);

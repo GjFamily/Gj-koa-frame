@@ -4,76 +4,74 @@
 var mysql = require('mysql');
 var config = require('../config');
 
-function Mysql(config){
+function Mysql(config) {
   this.connect = mysql.createPool(config);
 }
-Mysql.prototype.instance = function(){
+Mysql.prototype.instance = function() {
   return this.connect;
 };
-Mysql.prototype.promise = function(sql, connect){
+Mysql.prototype.escape = function(string) {
+  return this.connect.escape(string);
+};
+Mysql.prototype.promise = function(sql, connect) {
   let self = this;
   let instance = connect || self.instance();
   if(config.debug) console.log(sql);
   return new Promise((resolve, reject) => {
-    instance.query(sql, function(err, result, fields){
-      if(err)
-        reject(err);
-      else{
+    instance.query(sql, function(err, result, fields) {
+      if(err) reject(err);
+      else {
         resolve(result);
       }
     });
   });
 };
-
-Mysql.prototype.transactions = function(cb){
+Mysql.prototype.transactions = function(cb) {
   let self = this;
   let instance = null;
   return new Promise((resolve, reject) => {
-    self.instance().getConnection(function(err, connect){
-      if(err){
+    self.instance().getConnection(function(err, connect) {
+      if(err) {
         // console.log('reject');
         return reject(err);
-      }else{
+      } else {
         instance = connect;
-        instance.beginTransaction(function(err){
-          if(err)
-            return reject(err);
+        instance.beginTransaction(function(err) {
+          if(err) return reject(err);
           if(config.debug) console.log('mysql start transaction');
-            return resolve(connect);
+          return resolve(connect);
         });
       }
     });
-  }).then(cb).then((result)=>{
-    return new Promise((resolve, reject)=>{
-      instance.commit(function(err){
+  }).then(cb).then((result) => {
+    return new Promise((resolve, reject) => {
+      instance.commit(function(err) {
         if(config.debug) console.log('mysql commit');
-        if(err){
+        if(err) {
           reject(err);
-        }else {
+        } else {
           self.instance().releaseConnection(instance);
           resolve(result);
         }
       })
     })
-  }).catch((err)=>{
-    instance.rollback(function(){
+  }).catch((err) => {
+    instance.rollback(function() {
       if(config.debug) console.log('mysql rollback');
       self.instance().releaseConnection(instance);
     });
     throw err;
   });
 };
-
-Mysql.prototype.transaction = function(){
+Mysql.prototype.transaction = function() {
   let self = this;
   return new Promise((resolve, reject) => {
-    self.instance().getConnection(function(err, connect){
-      if(err){
+    self.instance().getConnection(function(err, connect) {
+      if(err) {
         reject(err);
-      }else{
-        connect.beginTransaction(function(err){
-          if(err)
-            return reject(err);
+      } else {
+        connect.beginTransaction(function(err) {
+          if(err) return reject(err);
           if(config.debug) console.log('mysql start transaction');
           return resolve(connect);
         });
@@ -81,34 +79,30 @@ Mysql.prototype.transaction = function(){
     });
   })
 };
-
-Mysql.prototype.commit = function(connect){
+Mysql.prototype.commit = function(connect) {
   let self = this;
-  return new Promise((resolve, reject)=>{
-    connect.commit(function(err){
+  return new Promise((resolve, reject) => {
+    connect.commit(function(err) {
       if(config.debug) console.log('mysql commit');
-      if(err){
+      if(err) {
         reject(err);
-      }else {
+      } else {
         self.instance().releaseConnection(connect);
         resolve();
       }
     });
   });
 };
-
-Mysql.prototype.rollback = function(connect){
+Mysql.prototype.rollback = function(connect) {
   let self = this;
-  return new Promise((resolve, reject)=>{
-    connect.rollback(function(err){
+  return new Promise((resolve, reject) => {
+    connect.rollback(function(err) {
       if(config.debug) console.log('mysql rollback');
       self.instance().releaseConnection(connect);
       resolve();
     });
   });
 };
-
 var mysqlInstance = new Mysql(config.mysql);
-
 module.exports = mysqlInstance;
 module.exports.Mysql = Mysql;

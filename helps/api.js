@@ -2,13 +2,13 @@
  * Created by gaojun on 17-2-18.
  */
 const request = require('request')
+const config = require('../config')
 
-function send (options) {
+function send(options) {
   return new Promise((resolve, reject) => {
     request(options, function (error, response, body) {
       if (!error && response.statusCode === 200) {
-        console.log(response.body)
-        resolve(response.body)
+        resolve(response.body, response)
       } else {
         console.log(error)
         reject(error || new Error('接口请求错误'))
@@ -17,7 +17,7 @@ function send (options) {
   })
 }
 
-function formatUrl (url, data) {
+function formatUrl(url, data) {
   let paramList = url.match(/\{.*?\}/g)
   if (paramList && paramList.length > 0) {
     for (let k in paramList) {
@@ -28,22 +28,32 @@ function formatUrl (url, data) {
       data[key] = null
     }
   }
+  return url;
 }
 
-function post(url, data, headers, options){
+function post(url, data, headers, options) {
   if (!headers) headers = {}
-  url = formatUrl(url, data)
-  if(!options) options = {}
+  if (!options) options = {}
   options.method = 'POST'
   options.url = url
-  options.body = JSON.stringify(data)
+  options.body = data
   options.headers = headers
   return send(options)
 }
 
-function get(url, data, options){
+function form(url, data, headers, options) {
+  if (!headers) headers = {}
+  if (!options) options = {}
+  options.method = 'POST'
+  options.url = url
+  options.headers = headers
+  options.formData = data
+  return send(options)
+}
+
+function get(url, data, headers, options) {
   url = formatUrl(url, data)
-  if(!options) options = {}
+  if (!options) options = {}
   url = `${url}?`
   for (let i in data) {
     url = `${url}${i}=${data[i]}&`
@@ -51,15 +61,61 @@ function get(url, data, options){
   url = url.substring(0, url.length - 1)
   options.method = 'GET'
   options.url = url
+  options.headers = headers
   return send(options)
 }
 
-function ssl(url, data, headers, options){
-  return post(url, data, headers, options);
+function wrap_get(server, api, data, d, buffer) {
+  if (config.NODE_ENV == 'test') return Promise.resolve(d);
+  return get(`http://${server.host}:${server.port}${api}`, data, { 'Token': server.token, 'Content-type': "application/json" }).then((result) => {
+    if (buffer) return result;
+    return JSON.parse(result);
+  }).then((result) => {
+    if (buffer) return result;
+    if (result.status != 200) throw Error(result.message);
+    return result.result;
+  });
 }
 
+function wrap_post(server, api, data, d, buffer) {
+  if (config.NODE_ENV == 'test') return Promise.resolve(d);
+  api = formatUrl(api, data)
+  return post(`http://${server.host}:${server.port}${api}`, JSON.stringify(data), { 'Token': server.token, 'Content-type': "application/json" }).then((result) => {
+    if (buffer) return result;
+    return JSON.parse(result);
+  }).then((result) => {
+    if (buffer) return result;
+    if (result.status != 200) throw Error(result.message);
+    return result.result;
+  });
+}
+
+function wrap_post_form(server, api, data, d, buffer) {
+  if (config.NODE_ENV == 'test') return Promise.resolve(d);
+  api = formatUrl(api, data)
+  return post(`http://${server.host}:${server.port}${api}`, null, { 'Token': server.token }, { formData: data }).then((result) => {
+    if (buffer) return result;
+    return JSON.parse(result);
+  }).then((result) => {
+    if (buffer) return result;
+    if (result.status != 200) throw Error(result.status + " " + result.message);
+    return result.result;
+  });
+}
+
+function wrap_proxy(server) {
+  return {
+    target: `http://${server.host}:${server.port}`,
+    changeOrigin: true,
+    headers: {
+      'Token': server.token
+    }
+  };
+}
 module.exports.post = post;
-
+module.exports.form = form;
 module.exports.get = get;
-
-module.exports.ssl = ssl;
+module.exports.wrap_get = wrap_get;
+module.exports.wrap_post = wrap_post;
+module.exports.wrap_post_form = wrap_post_form;
+module.exports.wrap_proxy = wrap_proxy;
