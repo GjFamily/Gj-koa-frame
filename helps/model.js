@@ -498,7 +498,7 @@ Model.prototype.getByKey = function (key) {
   let where = [
     [primary, "=", key]
   ];
-  return this.find(where, 0, 1).then((result) => {
+  return this.find(where, [0, 1]).then((result) => {
     return result ? (result[0] || null) : null;
   });
 };
