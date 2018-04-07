@@ -1,3 +1,3 @@
-module.exports.getId = function * () {
-  this.body = `template: ${this.params.id}`
-}
+module.exports.getId = function* () {
+  this.body = `template: ${this.params.id}`;
+};

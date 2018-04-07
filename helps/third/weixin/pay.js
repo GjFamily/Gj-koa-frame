@@ -1,27 +1,113 @@
+/* eslint-disable */
 const xml2js = require('xml2js');
 
+/**
+ * Marshalling object keys to be sorted alphabetically and then translated to url parameters
+ *
+ * @param params
+ * @returns {string}
+ */
+const marshall = function (params) {
+  params = params || {};
+  const keys = Object.keys(params).sort();
+  const obj = {};
+  const kvs = [];
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
+    if (params[k]) {
+      obj[k] = params[k];
+      kvs.push(`${keys[i]}=${params[k]}`);
+    }
+  }
+  return kvs.join('&');
+};
+const toXml = function (params) {
+  const lines = [];
+  lines.push('<xml>');
+  for (let k in params) {
+    if (!params[k]) {
+      continue;
+    }
+    if (typeof params[k] === 'number') {
+      lines.push('<' + k + '>' + params[k] + '</' + k + '>');
+    } else {
+      lines.push('<' + k + '><![CDATA[' + params[k] + ']]></' + k + '>');
+    }
+  }
+  lines.push('</xml>');
+  return lines.join('');
+}
+var responseTrade = function (response, success_status) {
+  switch (response.return_code) {
+    case 'SUCCESS':
+      if (response.result_code == 'SUCCESS') {
+        return formatReturn(success_status, '', response);
+      }
+      switch (response.err_code) {
+        case 'SYSTEMERROR':
+          return formatReturn('wait', '等待支付处理', response);
+        case 'USERPAYING':
+          return formatReturn('wait', '用户支付中，需要输入密码', response);
+        case 'BANKERROR':
+          return formatReturn('wait', '等待银行结果', response);
+        case 'NOTENOUGH':
+          return formatReturn('exception', '用户余额不足', response);
+        case 'AUTHCODEEXPIRE':
+          return formatReturn('exception', '二维码已过期，请用户在微信上刷新后再试', response);
+        case 'NOTSUPORTCARD':
+          return formatReturn('exception', '用户使用卡种不支持当前支付形式', response);
+        case 'ORDERPAID':
+          return formatReturn('success', '', response);
+        case 'ORDERCLOSED':
+          return formatReturn('close', '当前订单已关闭，请重新支付', response);
+        case 'ORDERREVERSED':
+          return formatReturn('cancel', '已撤销，请重新支付', response);
+        case 'REVERSE_EXPIRE': // cancel
+          return formatReturn('exception', '支付满7天，无法撤销', response);
+        case 'ORDERNOTEXIST': // query
+          return formatReturn('close', '查询的交易不存在，请重新支付', response);
+        default:
+          return formatReturn('system', response.err_code_des, response);
+      }
+    default:
+      return formatReturn('system', response.return_msg, response);
+  }
+};
+var formatReturn = function (status, message, response) {
+  return {
+    status: status,
+    message: message,
+    response: response,
+    id: response.out_trade_no,
+    transaction_no: response.transaction_id,
+    money: parseFloat(response.total_fee) / 100,
+    open_id: response.openid
+  }
+}
+
+function getTradeSignature(params, key) {
+  const temp = marshall(params) + '&key=' + key;
+  return temp.md5().toUpperCase();
+}
+
 function* tradeRequest(client, url, data, encrypt = false) {
+  const a = data;
   let options;
   if (encrypt) {
     options = {
       securityOptions: 'SSL_OP_NO_SSLv3',
       pfx: new Buffer(client.pfx, 'base64'),
-      passphrase: client.passphrase
-    }
+      passphrase: client.passphrase,
+    };
   }
-  let headers = {
-    'Content-Type': 'text/xml'
-  }
+  const headers = {
+    'Content-Type': 'text/xml',
+  };
 
   // data.sign_type = 'MD5';
-  data.sign = getTradeSignature(data, client.app_key);
+  a.sign = getTradeSignature(data, client.app_key);
   let content = yield client.payPost(url, toXml(data), headers, options);
   return yield parseXML(content);
-}
-
-function getTradeSignature(params, key) {
-  var temp = marshall(params) + '&key=' + key;
-  return temp.md5().toUpperCase();
 }
 
 module.exports.unifiedTrade = function* ({ pay_id, pid, money, subject, body, ip, notify_url, trade_type, open_id = null }) {
@@ -127,24 +213,24 @@ module.exports.getTrade = function* ({ pay_id, transaction_no, pid }) {
      PAYERROR--支付失败(其他原因，如银行返回失败)
      */
     switch (info.response.trade_state) {
-    case 'SUCCESS':
-      info.status = 'success';
-      break;
-    case 'REFUND':
-      info.status = 'refund';
-      break;
-    case 'NOTPAY':
-      info.status = 'wait';
-      break;
-    case 'REVOKED':
-      info.status = 'cancel';
-      break;
-    case 'USERPAYING':
-      info.status = 'wait';
-      break;
-    case 'PAYERROR':
-      info.status = 'error';
-      break;
+      case 'SUCCESS':
+        info.status = 'success';
+        break;
+      case 'REFUND':
+        info.status = 'refund';
+        break;
+      case 'NOTPAY':
+        info.status = 'wait';
+        break;
+      case 'REVOKED':
+        info.status = 'cancel';
+        break;
+      case 'USERPAYING':
+        info.status = 'wait';
+        break;
+      case 'PAYERROR':
+        info.status = 'error';
+        break;
     }
   }
   return info;
@@ -335,32 +421,32 @@ module.exports.returnTrade = function* (content) {
   if (info.response.indexOf('get_brand_wcpay_request') == 0) {
     // wap返回
     switch (info.response) {
-    case 'get_brand_wcpay_request:ok':
-      info.status = 'wait';
-      break;
-    case 'get_brand_wcpay_request:fail':
-      info.status = 'system';
-      break;
-    case 'get_brand_wcpay_request:cancel':
-      info.status = 'system';
-      break;
-    default:
-      info.status = 'system';
+      case 'get_brand_wcpay_request:ok':
+        info.status = 'wait';
+        break;
+      case 'get_brand_wcpay_request:fail':
+        info.status = 'system';
+        break;
+      case 'get_brand_wcpay_request:cancel':
+        info.status = 'system';
+        break;
+      default:
+        info.status = 'system';
     }
   } else {
     // app返回
     switch (info.response.toString()) {
-    case '0':
-      info.status = 'wait';
-      break;
-    case '-1':
-      info.status = 'system';
-      break;
-    case '-2':
-      info.status = 'system';
-      break;
-    default:
-      info.status = 'system';
+      case '0':
+        info.status = 'wait';
+        break;
+      case '-1':
+        info.status = 'system';
+        break;
+      case '-2':
+        info.status = 'system';
+        break;
+      default:
+        info.status = 'system';
     }
   }
   return info;
@@ -414,87 +500,3 @@ var toParam = function (params) {
   }
   return keys.join('&');
 };
-
-/**
- * Marshalling object keys to be sorted alphabetically and then translated to url parameters
- *
- * @param params
- * @returns {string}
- */
-var marshall = function (params) {
-  params = params || {};
-  var keys = Object.keys(params).sort();
-  var obj = {};
-  var kvs = [];
-  for (var i = 0; i < keys.length; i++) {
-    var k = keys[i];
-    if (params[k]) {
-      obj[k] = params[k];
-      kvs.push(keys[i] + '=' + params[k]);
-    }
-  }
-  return kvs.join('&');
-};
-var toXml = function (params) {
-  var lines = [];
-  lines.push('<xml>');
-  for (var k in params) {
-    if (!params[k]) {
-      continue;
-    }
-    if (typeof params[k] === 'number') {
-      lines.push('<' + k + '>' + params[k] + '</' + k + '>');
-    } else {
-      lines.push('<' + k + '><![CDATA[' + params[k] + ']]></' + k + '>');
-    }
-  }
-  lines.push('</xml>');
-  return lines.join('');
-}
-var responseTrade = function (response, success_status) {
-  switch (response.return_code) {
-  case 'SUCCESS':
-    if (response.result_code == 'SUCCESS') {
-      return formatReturn(success_status, '', response);
-    }
-    switch (response.err_code) {
-    case 'SYSTEMERROR':
-      return formatReturn('wait', '等待支付处理', response);
-    case 'USERPAYING':
-      return formatReturn('wait', '用户支付中，需要输入密码', response);
-    case 'BANKERROR':
-      return formatReturn('wait', '等待银行结果', response);
-    case 'NOTENOUGH':
-      return formatReturn('exception', '用户余额不足', response);
-    case 'AUTHCODEEXPIRE':
-      return formatReturn('exception', '二维码已过期，请用户在微信上刷新后再试', response);
-    case 'NOTSUPORTCARD':
-      return formatReturn('exception', '用户使用卡种不支持当前支付形式', response);
-    case 'ORDERPAID':
-      return formatReturn('success', '', response);
-    case 'ORDERCLOSED':
-      return formatReturn('close', '当前订单已关闭，请重新支付', response);
-    case 'ORDERREVERSED':
-      return formatReturn('cancel', '已撤销，请重新支付', response);
-    case 'REVERSE_EXPIRE': // cancel
-      return formatReturn('exception', '支付满7天，无法撤销', response);
-    case 'ORDERNOTEXIST': // query
-      return formatReturn('close', '查询的交易不存在，请重新支付', response);
-    default:
-      return formatReturn('system', response.err_code_des, response);
-    }
-  default:
-    return formatReturn('system', response.return_msg, response);
-  }
-};
-var formatReturn = function (status, message, response) {
-  return {
-    status: status,
-    message: message,
-    response: response,
-    id: response.out_trade_no,
-    transaction_no: response.transaction_id,
-    money: parseFloat(response.total_fee) / 100,
-    open_id: response.openid
-  }
-}

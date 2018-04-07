@@ -1,3 +1,5 @@
-const template = require('./template')
+const admin = require('./admin')
+const app = require('./app')
+const robot = require('./robot')
 
-module.exports = [template]
+module.exports = [robot]

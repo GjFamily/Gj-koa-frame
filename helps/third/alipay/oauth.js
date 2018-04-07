@@ -1,10 +1,11 @@
+/* eslint-disable */
 const GENDER = require('./').GENDER;
 /**
  * 获取用户信息：在支付宝内部
  * @param code
  * @returns {{open_id: *, access_token: *, expires_time: *, refresh_token: *, nick_name: *, gender: *, province: *, city: *, country: *, avatar: *}}
  */
-module.exports.webAuthorize = function *({ code }) {
+module.exports.webAuthorize = function* ({ code }) {
   let { access_token, user_id, expires_in, refresh_token } = yield getWebAccessToken(this, code);
   let { nick_name, gender, province, city, country, avatar } = yield getWebUserInfo(this, access_token);
   return {
@@ -13,7 +14,7 @@ module.exports.webAuthorize = function *({ code }) {
     expires_time: expires_in,
     refresh_token: refresh_token,
     nick_name: nick_name,
-    gender: gender == 1? GENDER.MEN: GENDER.WOMEN,
+    gender: gender == 1 ? GENDER.MEN : GENDER.WOMEN,
     province: province,
     city: city,
     country: country,
@@ -36,7 +37,7 @@ module.exports.webAuthorize = function *({ code }) {
   "sign": "xDffQVBBelDiY/FdJi4/a2iQV1I7TgKDFf/9BUCe6+l1UB55YDOdlCAir8CGlTfa0zLYdX0UaYAa43zY2jLhCTDG+d6EjhCBWsNY74yTdiM95kTNsREgAt4PkOkpsbyZVXdLIShxLFAqI49GIv82J3YtzBcVDDdDeqFcUhfasII="
   }
  */
-function * getWebAccessToken (client, code) {
+function* getWebAccessToken(client, code) {
   let data = client.getBaseData();
   data.method = 'alipay.system.oauth.token';
   data.grant_type = 'authorization_code';
@@ -61,7 +62,7 @@ function * getWebAccessToken (client, code) {
   "sign": "xDffQVBBelDiY/FdJi4/a2iQV1I7TgKDFf/9BUCe6+l1UB55YDOdlCAir8CGlTfa0zLYdX0UaYAa43zY2jLhCTDG+d6EjhCBWsNY74yTdiM95kTNsREgAt4PkOkpsbyZVXdLIShxLFAqI49GIv82J3YtzBcVDDdDeqFcUhfasII="
   }
  */
-function * refreshWebAccessToken (client, refresh_token) {
+function* refreshWebAccessToken(client, refresh_token) {
   let data = client.getBaseData()
   data.method = 'alipay.system.oauth.token';
   data.grant_type = 'authorization_code';
@@ -96,7 +97,7 @@ function * refreshWebAccessToken (client, refresh_token) {
   "sign": "jhoSkfE7BTIbwEx0L8/H0GU0Z2DOZYIJlrUMyJL8wwwInVeXfz+CWqx0V2b3FvhMQSrb74dkzDQpGXGdZQZMldGe4+FSEQU1V3tWijpO9ZisNJnEpF+U2lQ7IUMLsgjjx9a0IdMwvXlqz1HPrmFZQjG2dvlFyXhi07HcEnVOJZw="
   }
  */
-function * getWebUserInfo (client, access_token) {
+function* getWebUserInfo(client, access_token) {
   let data = client.getBaseData()
   data.method = 'alipay.user.info.share';
   data.grant_type = 'authorization_code';
@@ -106,7 +107,7 @@ function * getWebUserInfo (client, access_token) {
 }
 
 // 此app为支付宝上架app，服务授权接口
-module.exports.appAuthorize = function *({ code }) {
+module.exports.appAuthorize = function* ({ code }) {
   let { app_auth_token, user_id, expires_in, app_refresh_token, auth_app_id, re_expires_in } = yield getAppAccessToken(this, code);
   let { auth_end, auth_start, auth_methods } = yield getAppAuthInfo(this, app_auth_token);
   return {
@@ -136,7 +137,7 @@ module.exports.appAuthorize = function *({ code }) {
     "sign": "TR5xJkWX65vRjwnNNic5n228DFuXGFOCW4isWxx5iLN8EuHoU2OTOeh1SOzRredhnJ6G9eOXFMxHWl7066KQqtyxVq2PvW9jm94QOuvx3TZu7yFcEhiGvAuDSZXcZ0sw4TyQU9+/cvo0JKt4m1M91/Quq+QLOf+NSwJWaiJFZ9k="
 }
  */
-function * getAppAccessToken (client, code) {
+function* getAppAccessToken(client, code) {
   let data = client.getBaseData();
   data.method = 'alipay.open.auth.token.app';
   data.grant_type = 'authorization_code';
@@ -163,7 +164,7 @@ function * getAppAccessToken (client, code) {
     "sign": "TR5xJkWX65vRjwnNNic5n228DFuXGFOCW4isWxx5iLN8EuHoU2OTOeh1SOzRredhnJ6G9eOXFMxHWl7066KQqtyxVq2PvW9jm94QOuvx3TZu7yFcEhiGvAuDSZXcZ0sw4TyQU9+/cvo0JKt4m1M91/Quq+QLOf+NSwJWaiJFZ9k="
 }
  */
-function * refreshAppAccessToken (client, refresh_token) {
+function* refreshAppAccessToken(client, refresh_token) {
   let data = client.getBaseData()
   data.method = 'alipay.open.auth.token.app';
   data.grant_type = 'refresh_token';
@@ -194,7 +195,7 @@ function * refreshAppAccessToken (client, refresh_token) {
     }
 }
  */
-function * getAppAuthInfo (client, app_auth_token) {
+function* getAppAuthInfo(client, app_auth_token) {
   let data = client.getBaseData()
   data.method = 'alipay.open.auth.token.app.query';
   data.app_auth_token = app_auth_token;

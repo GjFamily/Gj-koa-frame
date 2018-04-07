@@ -1,0 +1,11 @@
+const path = require('path')
+const fs = require('fs')
+
+let version = fs.readFileSync('./version', 'utf8');
+
+module.exports = {
+  'config': path.resolve('./config','database.js'),
+  'migrations-path': path.resolve('./database', 'migrations'),
+  'models-path': path.resolve('./','models'),
+  'seeders-path': path.resolve('./database', 'seeders'),
+}

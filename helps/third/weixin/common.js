@@ -1,3 +1,4 @@
+/* eslint-disable */
 module.exports.jsApiConfig = function* ({ url }) {
   let { access_token } = yield getAccessToken(this);
   let { ticket } = yield getJsApiTicket(this, access_token);

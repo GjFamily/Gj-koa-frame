@@ -1,15 +1,16 @@
-const config = require('./config');
+// const config = require('./config');
 
-var tools = require('./helps/tools');
+const tools = require('./helps/tools');
+const agent = require('./helps/agent')();
+
 tools.extend();
-var agent = require('./helps/agent')();
 
-agent.loop(function* () {
-  console.log("Task dispatch");
-}, function* () {
+agent.loop(() => {
+  console.log('Task dispatch');
+}, () => {
   return 10;
 });
 
-agent.cron(function* () {
-  console.log("Task clear");
+agent.cron(() => {
+  console.log('Task clear');
 }, '0 0 3 * * *');

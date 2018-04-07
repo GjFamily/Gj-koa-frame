@@ -1,19 +1,18 @@
-var config = require('../config');
-var koa_logger = require('koa-bunyan-logger');
+const koaLogger = require('koa-bunyan-logger');
 
-var env = process.env.NODE_ENV || "development"
+// const env = process.env.NODE_ENV || 'development'
 
 
-var info = {};
+// var info = {};
 
-module.exports = function () {
-  return koa_logger({});
+module.exports = function logger() {
+  return koaLogger({});
 };
 
-module.exports.print = function () {
-  return function *(next) {
+module.exports.print = function print() {
+  return function* middle(next) {
     console.log(this.request);
     yield next;
     console.log(this.response);
-  }
-}
+  };
+};

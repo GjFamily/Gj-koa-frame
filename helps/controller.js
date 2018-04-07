@@ -1,21 +1,20 @@
 /**
  * Created by gaojie on 17-2-18.
  */
-var parse = function (cb, opts) {
-  return function* (next) {
-    let ctx = this;
-    let req = ctx.request;
-    let params = ctx.params;
+const parse = function (cb, opts) {
+  return function* () {
+    const ctx = this;
+    const req = ctx.request;
     let kwarg = {};
     if (opts) {
-      opts.map((value) => {
+      opts.forEach((value) => {
         if (value.body) { // json格式，或者text格式
           kwarg[value.name] = req.body[value.name];
         } else if (value.query) { // 请求
-          let v = req.query[value.name];
+          const v = req.query[value.name];
           kwarg[value.name] = value.array ? v.split(',') : v;
         } else if (value.path) { // 路径
-          kwarg[value.name] = params[value.name];
+          kwarg[value.name] = ctx.params[value.name];
         } else if (value.form) { // 表单提交
           kwarg[value.name] = req.fields[value.name];
         } else if (value.cache) {
@@ -30,13 +29,14 @@ var parse = function (cb, opts) {
     }
     try {
       if (!(cb instanceof Array)) cb = [cb];
-      for (let index in cb) {
-        kwarg = yield(cb[index]).call(this, kwarg);
+      for (const index in cb) {
+        const r = (cb[index]).call(this, kwarg);
+        kwarg = yield r;
       }
       if (ctx.body) return;
       ctx.body = {
         status: 200,
-        result: kwarg
+        result: kwarg,
       };
       // 多个路由验证问题，需要规范扩展
       // yield next;
@@ -44,9 +44,9 @@ var parse = function (cb, opts) {
       if (err.log || !err.no) ctx.log.error(err);
       ctx.body = {
         status: 500,
-        message: err.message
+        message: err.message,
       };
     }
-  }
+  };
 };
 module.exports = parse;

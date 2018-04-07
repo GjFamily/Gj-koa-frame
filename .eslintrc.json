@@ -1,0 +1,22 @@
+{
+  "extends": "airbnb-base",
+  "plugins": [
+    "import"
+  ],
+  "rules": {
+    "camelcase": 0,
+    "arrow-body-style": "off",
+    "no-plusplus": "off",
+    "func-names": "off",
+    "require-yield": "off",
+    "no-param-reassign": "off",
+    "no-continue": "off",
+    "no-else-return": "off",
+    "object-curly-newline": "off",
+    "guard-for-in": "off",
+    "no-restricted-syntax": "off",
+    "no-extend-native": "off",
+    "no-underscore-dangle": "off",
+    "no-nested-ternary": "off"
+  }
+}

@@ -1,3 +1,4 @@
+/* eslint-disable */
 const GENDER = require('./').GENDER;
 /**
  * 获取用户信息：在微信内部

@@ -1,81 +1,81 @@
 /**
  * Created by gaojie on 17-2-17.
  */
-var redis = require('redis');
-var commands = require('redis-commands');
-var config = require('../config');
-var middlewares = require('koa-middlewares');
-var client = redis.createClient(config.redis);
-var redisInstance = function(client) {
-  this.client = client;
+const redis = require('redis');
+const commands = require('redis-commands');
+const config = require('../config');
+const middlewares = require('koa-middlewares');
+
+const client = redis.createClient(config.redis);
+const RedisInstance = function instance(i) {
+  this.client = i;
 };
-redisInstance.prototype.getClient = function() {
+RedisInstance.prototype.getClient = function getClient() {
   return this.client;
 };
-commands.list.forEach(function(command) {
-  redisInstance.prototype[command] = function() {
-    var ctx = this;
-    var arg = [];
-    for(var key in arguments) {
-      arg.push(arguments[key]);
+commands.list.forEach((command) => {
+  RedisInstance.prototype[command] = () => {
+    const ctx = this;
+    const arg = [];
+    for (let i = 0; i < arguments.length; i++) {
+      arg.push(arguments[i]);
     }
-    if(config.debug) console.log(command, arg);
+    if (config.debug) console.log(command, arg);
     return new Promise((resolve, reject) => {
-      arg.push(function(err, result) {
-        if(err) {
+      arg.push((err, result) => {
+        if (err) {
           reject(err);
         } else {
           resolve(result);
         }
       });
       redis.RedisClient.prototype[command].apply(ctx.client, arg);
-    })
-  }
+    });
+  };
 });
-var redisSub = function(client) {
-  this.client = client;
+const RedisSub = function instance(i) {
+  this.client = i;
 };
-redisSub.prototype.channelMap = {};
-redisSub.prototype.isSub = false;
-redisSub.prototype.sub = function(channel, callBack, key) {
-  if(!this.isSub) {
-    this.client.on('message', (channel, message) => {
-      let actionList = this.channelMap[channel];
-      for(let i = 0; i < actionList.length; i++) {
-        let action = actionList[i];
+RedisSub.prototype.channelMap = {};
+RedisSub.prototype.isSub = false;
+RedisSub.prototype.sub = function sub(channel, callBack, key) {
+  if (!this.isSub) {
+    this.client.on('message', (ch, message) => {
+      const actionList = this.channelMap[ch];
+      for (let i = 0; i < actionList.length; i++) {
+        const action = actionList[i];
         action[1](message);
       }
-    })
+    });
     this.isSub = true;
   }
-  if(!this.channelMap[channel]) {
+  if (!this.channelMap[channel]) {
     this.client.subscribe(channel);
-    this.channelMap[channel] = []
+    this.channelMap[channel] = [];
   }
   this.channelMap[channel].push([key, callBack]);
 };
-redisSub.prototype.unSub = function(channel, key) {
-  let actionList = this.channelMap[channel];
-  for(let i = 0; i < actionList.length; i++) {
-    let action = actionList[i];
-    if(action[0] === key) {
+RedisSub.prototype.unSub = function unSub(channel, key) {
+  const actionList = this.channelMap[channel];
+  for (let i = 0; i < actionList.length; i++) {
+    const action = actionList[i];
+    if (action[0] === key) {
       actionList.splice(i, 1);
-      break
+      break;
     }
   }
 };
-redisInstance.prototype.pub = function(channel, message) {
-  this.client.publish(channel, message)
+RedisInstance.prototype.pub = function pub(channel, message) {
+  this.client.publish(channel, message);
 };
-var store = middlewares.redisStore({
-  client: client
+const store = middlewares.redisStore({
+  client,
 });
-let subClient = redis.createClient(config.redis);
-module.exports = new redisInstance(client);
-module.exports.redisSub = new redisSub(subClient);
+const subClient = redis.createClient(config.redis);
+module.exports = new RedisInstance(client);
+module.exports.redisSub = new RedisSub(subClient);
 module.exports.store = store;
-module.exports.newRedis = function() {
-  let client = redis.createClient(config.redis);
-  return new redisInstance(client);
+module.exports.newRedis = function newRedis() {
+  return new RedisInstance(redis.createClient(config.redis));
 };
 // module.exports = Redis;

@@ -1,7 +1,7 @@
-var { Model, Schema } = require("../helps/model");
-var { executor } = require('../helps/model');
+const { Model, Schema } = require('../helps/model');
+// const { executor } = require('../helps/model');
 
-let schema = new Schema({
+const schema = new Schema({
   primary: 'id',
   create_time: true,
   update_time: true,
@@ -9,28 +9,28 @@ let schema = new Schema({
   fields: ['id', 'open_id', 'nick_name', 'avatar', 'message', 'money', 'session_key'],
   default: {
     money: 0,
-    message: 1
-  }
+    message: 1,
+  },
 });
 
-var model = new Model('user', schema);
+const model = new Model('user', schema);
 /**
  * 查找账号
  * @param open_id
  * @returns {*}
  */
 model.getByOpen = function (open_id) {
-  let where = [];
-  where.push(["open_id", "=", open_id]);
+  const where = [];
+  where.push(['open_id', '=', open_id]);
   return this.one({
-    where: where
+    where,
   }).then((result) => {
     if (result) return result;
     return this.insert({
-      open_id: open_id,
-      nick_name: "",
-      avatar: "",
-      session_key: ""
+      open_id,
+      nick_name: '',
+      avatar: '',
+      session_key: '',
     });
   });
 };
@@ -43,8 +43,8 @@ model.getByOpen = function (open_id) {
 model.getIds = function (ids) {
   return this.findByQuery({
     where: [
-      ['id', 'in', ids]
-    ]
+      ['id', 'in', ids],
+    ],
   });
 };
 /**
@@ -53,7 +53,7 @@ model.getIds = function (ids) {
  * @returns {*}
  */
 model.rank = function (number) {
-  return this.find(null, number, "money desc");
+  return this.find(null, number, 'money desc');
 };
 /**
  * 充值操作
@@ -63,7 +63,7 @@ model.rank = function (number) {
  */
 model.recharge = function (user_id, money) {
   return this.updateByKey(user_id, {
-    money: ["+=", money]
+    money: ['+=', money],
   });
 };
 /**
@@ -74,7 +74,7 @@ model.recharge = function (user_id, money) {
  */
 model.consume = function (user_id, money) {
   return this.updateByKey(user_id, {
-    money: ["-=", money]
+    money: ['-=', money],
   });
 };
 module.exports = model;

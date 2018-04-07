@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 条码支付
  * @param pay_id
@@ -97,18 +98,18 @@ module.exports.getTrade = function* ({ pay_id, transaction_no, pid }) {
   if (info.status == 'ok') {
     // 交易状态：WAIT_BUYER_PAY（交易创建，等待买家付款）、TRADE_CLOSED（未付款交易超时关闭，或支付完成后全额退款）、TRADE_SUCCESS（交易支付成功）、TRADE_FINISHED（交易结束，不可退款）
     switch (info.response.trade_status) {
-    case 'WAIT_BUYER_PAY':
-      info.status = 'wait';
-      break;
-    case 'TRADE_CLOSE':
-      info.status = 'close';
-      break;
-    case 'TRADE_SUCCESS':
-      info.status = 'success';
-      break;
-    case 'TRADE_FINISHED':
-      info.status = 'finish';
-      break;
+      case 'WAIT_BUYER_PAY':
+        info.status = 'wait';
+        break;
+      case 'TRADE_CLOSE':
+        info.status = 'close';
+        break;
+      case 'TRADE_SUCCESS':
+        info.status = 'success';
+        break;
+      case 'TRADE_FINISHED':
+        info.status = 'finish';
+        break;
     }
   }
   if (info.status == 'success' || info.status == 'finish') {
@@ -277,18 +278,18 @@ module.exports.notifyTrade = function* (content) {
     return info;
   }
   switch (info.response.trade_status) {
-  case 'WAIT_BUYER_PAY':
-    info.status = 'wait';
-    break;
-  case 'TRADE_CLOSE':
-    info.status = 'close';
-    break;
-  case 'TRADE_SUCCESS':
-    info.status = 'success';
-    break;
-  case 'TRADE_FINISHED':
-    info.status = 'finish';
-    break;
+    case 'WAIT_BUYER_PAY':
+      info.status = 'wait';
+      break;
+    case 'TRADE_CLOSE':
+      info.status = 'close';
+      break;
+    case 'TRADE_SUCCESS':
+      info.status = 'success';
+      break;
+    case 'TRADE_FINISHED':
+      info.status = 'finish';
+      break;
   }
 
   info.id = info.response.out_trade_no;
@@ -313,33 +314,33 @@ module.exports.returnTrade = function* (content) {
     // 手机返回
     // let {out_trade_no, trade_no, app_id, total_amount, seller_id, msg, charset, timestamp, code} = content;
     switch (info.response.code) {
-    case '9000':
-      info.status = 'wait';
-      info.id = info.response.out_trade_no;
-      info.transaction_no = info.response.trade_no;
-      info.money = info.response.total_amount;
-      break;
-    case '6004':
-    case '8000':
-      info.status = 'wait';
-      info.message = '支付处理中';
-      break;
-    case '4000':
-      info.status = 'error';
-      info.message = '支付失败';
-      break;
-    case '6001':
-      info.status = 'error';
-      info.message = '用户取消支付';
-      break;
-    case '6002':
-      info.status = 'system';
-      info.message = '网络链接错误';
-      break;
-    case '5000':
-    default:
-      info.status = 'system';
-      info.message = '请联系管理员';
+      case '9000':
+        info.status = 'wait';
+        info.id = info.response.out_trade_no;
+        info.transaction_no = info.response.trade_no;
+        info.money = info.response.total_amount;
+        break;
+      case '6004':
+      case '8000':
+        info.status = 'wait';
+        info.message = '支付处理中';
+        break;
+      case '4000':
+        info.status = 'error';
+        info.message = '支付失败';
+        break;
+      case '6001':
+        info.status = 'error';
+        info.message = '用户取消支付';
+        break;
+      case '6002':
+        info.status = 'system';
+        info.message = '网络链接错误';
+        break;
+      case '5000':
+      default:
+        info.status = 'system';
+        info.message = '请联系管理员';
     }
   } else {
     // wap返回
@@ -363,68 +364,68 @@ var successTrade = function () {
 
 var responseTrade = function (response, success_status) {
   switch (response.code) {
-  case 10000: // 调用接口成功
-    return formatReturn(success_status, '', response);
-  case 40004: // 业务处理失败
-    switch (response.sub_code) {
-    case 'ACQ.EXIST_FORBIDDEN_WORD':
-      return formatReturn('error', response.sub_msg, response);
-    case 'ACQ.TRADE_HAS_SUCCESS':
-      return formatReturn('success', '', response);
-    case 'ACQ.TRADE_HAS_CLOSE':
-      return formatReturn('close', '当前订单已关闭，请重新支付', response);
-    case 'ACQ.BUYER_BALANCE_NOT_ENOUGH':
-      return formatReturn('error', '用户余额不足', response);
-    case 'ACQ.BUYER_BANKCARD_BALANCE_NOT_ENOUGH':
-      return formatReturn('error', '用户余额不足', response);
-    case 'ACQ.ERROR_BALANCE_PAYMENT_DISABLE':
-      return formatReturn('error', '余额支付需开启', response);
-    case 'ACQ.BUYER_SELLER_EQUAL':
-      return formatReturn('error', '买卖家不能相同', response);
-    case 'ACQ.TRADE_BUYER_NOT_MATCH':
-      return formatReturn('error', '交易买家不匹配', response);
-    case 'ACQ.BUYER_ENABLE_STATUS_FORBID':
-      return formatReturn('error', '用户状态非法', response);
-    case 'ACQ.PULL_MOBILE_CASHIER_FAIL':
-      return formatReturn('error', '请重新支付', response);
-    case 'ACQ.MOBILE_PAYMENT_SWITCH_OFF':
-      return formatReturn('error', '请开启无线支付功能', response);
-    case 'ACQ.PAYMENT_FAIL':
-      return formatReturn('error', '系统错误，请重新支付', response);
-    case 'ACQ.BUYER_PAYMENT_AMOUNT_DAY_LIMIT_ERROR':
-      return formatReturn('error', '买家付款日限额超限', response);
-    case 'ACQ.BEYOND_PAY_RESTRICTION':
-      return formatReturn('error', '商家收款额度超限', response);
-    case 'ACQ.BEYOND_PER_RECEIPT_RESTRICTION':
-      return formatReturn('error', '商家月收款额度超限', response);
-    case 'ACQ.BUYER_PAYMENT_AMOUNT_MONTH_LIMIT_ERROR':
-      return formatReturn('error', '买家月支付额度超限', response);
-    case 'ACQ.SELLER_BEEN_BLOCKED':
-      return formatReturn('error', '商家账号被冻结', response);
-    case 'ACQ.ERROR_BUYER_CERTIFY_LEVEL_LIMIT':
-      return formatReturn('error', '买家未通过人行认证', response);
-    case 'ACQ.PAYMENT_REQUEST_HAS_RISK':
-      return formatReturn('error', '支付方式存在风险', response);
-    case 'ACQ.NO_PAYMENT_INSTRUMENTS_AVAILABLE':
-      return formatReturn('error', '没有可用的支付工具', response);
-    case 'ACQ.USER_FACE_PAYMENT_SWITCH_OFF':
-      return formatReturn('error', '请开启当面付款开关', response);
-    case 'ACQ.SELLER_BALANCE_NOT_ENOUGH':
-      return formatReturn('error', '商户的支付宝账户中无足够的资金进行撤销', response);
-    case 'ACQ.REASON_TRADE_BEEN_FREEZEN':
-      return formatReturn('exception', '当前交易被冻结，不允许进行撤销', response);
-    case 'ACQ.TRADE_NOT_EXIST': //query
-      return formatReturn('close', '查询的交易不存在，请重新支付', response);
-    default:
-      return formatReturn('system', response.sub_msg, response);
-    }
-  case 20000: // 服务不可用
-    return formatReturn('wait', '等待支付处理', response);
-  case 20001: // 授权权限不足
-  case 40001: // 缺少必要参数
-  case 40002: // 非法参数
-  case 40006: // 权限不足
-    return formatReturn('system', response.msg, response);
+    case 10000: // 调用接口成功
+      return formatReturn(success_status, '', response);
+    case 40004: // 业务处理失败
+      switch (response.sub_code) {
+        case 'ACQ.EXIST_FORBIDDEN_WORD':
+          return formatReturn('error', response.sub_msg, response);
+        case 'ACQ.TRADE_HAS_SUCCESS':
+          return formatReturn('success', '', response);
+        case 'ACQ.TRADE_HAS_CLOSE':
+          return formatReturn('close', '当前订单已关闭，请重新支付', response);
+        case 'ACQ.BUYER_BALANCE_NOT_ENOUGH':
+          return formatReturn('error', '用户余额不足', response);
+        case 'ACQ.BUYER_BANKCARD_BALANCE_NOT_ENOUGH':
+          return formatReturn('error', '用户余额不足', response);
+        case 'ACQ.ERROR_BALANCE_PAYMENT_DISABLE':
+          return formatReturn('error', '余额支付需开启', response);
+        case 'ACQ.BUYER_SELLER_EQUAL':
+          return formatReturn('error', '买卖家不能相同', response);
+        case 'ACQ.TRADE_BUYER_NOT_MATCH':
+          return formatReturn('error', '交易买家不匹配', response);
+        case 'ACQ.BUYER_ENABLE_STATUS_FORBID':
+          return formatReturn('error', '用户状态非法', response);
+        case 'ACQ.PULL_MOBILE_CASHIER_FAIL':
+          return formatReturn('error', '请重新支付', response);
+        case 'ACQ.MOBILE_PAYMENT_SWITCH_OFF':
+          return formatReturn('error', '请开启无线支付功能', response);
+        case 'ACQ.PAYMENT_FAIL':
+          return formatReturn('error', '系统错误，请重新支付', response);
+        case 'ACQ.BUYER_PAYMENT_AMOUNT_DAY_LIMIT_ERROR':
+          return formatReturn('error', '买家付款日限额超限', response);
+        case 'ACQ.BEYOND_PAY_RESTRICTION':
+          return formatReturn('error', '商家收款额度超限', response);
+        case 'ACQ.BEYOND_PER_RECEIPT_RESTRICTION':
+          return formatReturn('error', '商家月收款额度超限', response);
+        case 'ACQ.BUYER_PAYMENT_AMOUNT_MONTH_LIMIT_ERROR':
+          return formatReturn('error', '买家月支付额度超限', response);
+        case 'ACQ.SELLER_BEEN_BLOCKED':
+          return formatReturn('error', '商家账号被冻结', response);
+        case 'ACQ.ERROR_BUYER_CERTIFY_LEVEL_LIMIT':
+          return formatReturn('error', '买家未通过人行认证', response);
+        case 'ACQ.PAYMENT_REQUEST_HAS_RISK':
+          return formatReturn('error', '支付方式存在风险', response);
+        case 'ACQ.NO_PAYMENT_INSTRUMENTS_AVAILABLE':
+          return formatReturn('error', '没有可用的支付工具', response);
+        case 'ACQ.USER_FACE_PAYMENT_SWITCH_OFF':
+          return formatReturn('error', '请开启当面付款开关', response);
+        case 'ACQ.SELLER_BALANCE_NOT_ENOUGH':
+          return formatReturn('error', '商户的支付宝账户中无足够的资金进行撤销', response);
+        case 'ACQ.REASON_TRADE_BEEN_FREEZEN':
+          return formatReturn('exception', '当前交易被冻结，不允许进行撤销', response);
+        case 'ACQ.TRADE_NOT_EXIST': //query
+          return formatReturn('close', '查询的交易不存在，请重新支付', response);
+        default:
+          return formatReturn('system', response.sub_msg, response);
+      }
+    case 20000: // 服务不可用
+      return formatReturn('wait', '等待支付处理', response);
+    case 20001: // 授权权限不足
+    case 40001: // 缺少必要参数
+    case 40002: // 非法参数
+    case 40006: // 权限不足
+      return formatReturn('system', response.msg, response);
   }
 };
 var formatReturn = function (status, message, response) {

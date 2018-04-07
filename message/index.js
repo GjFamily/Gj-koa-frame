@@ -1,5 +1,7 @@
 /**
  * Created by gaojun on 17-3-7.
  */
-let template = require('./template');
-module.exports = [template]
+const base = require('./base');
+const chat = require('./chat');
+
+module.exports = [base, chat];

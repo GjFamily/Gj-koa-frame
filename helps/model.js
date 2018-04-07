@@ -1,18 +1,96 @@
 /**
  * Created by gaojie on 2017/3/15.
  */
-var util = require('util');
-var events = require('events');
-var co = require('co');
-var mysql = require('../tools/mysql');
-var redis = {}; //require('../tools/redis');
-var config = require('../config');
+const util = require('util');
+const events = require('events');
+const co = require('co');
+const mysql = require('../tools/mysql');
+// const config = require('../config');
 
-function Executor(mysql, redis) {
-  this.mysql = mysql;
-  this.redis = redis;
+const redis = {}; // require('../tools/redis');
+
+// const MODEL_ORDER_ASC = 'asc';
+const MODEL_ORDER_DESC = 'desc';
+
+function Executor(m, r) {
+  this.mysql = m;
+  this.redis = r;
   this.app = {};
 }
+
+function Query(model) {
+  this.query = {};
+  if (model) {
+    this.model = model;
+    this.schema = model.schema;
+    this.table_name(model.table_name);
+    if (this.schema.expire()) {
+      this.query.primary = this.schema.getPrimary();
+      this.query.index = this.schema.index();
+      this.query.expire = this.schema.expire();
+    }
+  }
+}
+Query.prototype.table_name = function (table_name) {
+  this.query.table_name = table_name;
+  return this;
+};
+Query.prototype.set = function (query) {
+  if (query instanceof Query) {
+    Object.assign(this.query, query.query);
+  } else {
+    Object.assign(this.query, query);
+  }
+  return this;
+};
+Query.prototype.get = function () {
+  return this.query;
+};
+Query.prototype.limit = function (offset = 0, num = 0) {
+  this.query.limit = [offset, num];
+  return this;
+};
+Query.prototype.select = function () {
+  this.query.select = true;
+  return this;
+};
+Query.prototype.one = function () {
+  this.query.limit = [0, 1];
+  return this;
+};
+Query.prototype.count = function () {
+  this.query.field = 'COUNT(*)';
+  this.query.count = true;
+  this.query.select = true;
+  if (!this.query.where || this.query.where.length === 0) this.query.where = '1';
+  return this;
+};
+Query.prototype.order = function (field, d) {
+  d = d || MODEL_ORDER_DESC;
+  this.query.order = [field, d];
+  return this;
+};
+Query.prototype.all = function () {
+  this.query.limit = [];
+  return this.select();
+};
+Query.prototype.field = function (field) {
+  this.query.field = field;
+  return this;
+};
+Query.prototype.delete = function () {
+  this.query.delete = true;
+  return this;
+};
+Query.prototype.update = function (data) {
+  this.query.update = true;
+  this.query.value = data;
+  return this;
+};
+Query.prototype.connect = function (connect) {
+  this.query.connect = connect;
+  return this;
+};
 Executor.prototype.exec = function (sql, connect) {
   // if(this.app.__MOCK__){
   //   return Promise.resolve(new MockModel(this.mockData, sql).exec(sql));
@@ -22,76 +100,78 @@ Executor.prototype.exec = function (sql, connect) {
 };
 Executor.prototype.handle = function (query) {
   if (query instanceof Query) query = query.get();
-  let executor = this;
+  const executor = this;
   return executor.handle_sql(query);
-  let promise;
-  let key = this.getCacheKey(query);
-  if (key && query.select) {
-    promise = this.getCache(key);
-  } else {
-    promise = Promise.resolve(null);
-  }
-  return promise.then((result) => {
-    if (result !== null) return result;
-    return executor.handle_sql(query);
-  }).then((result) => {
-    if ((query.select || query.insert) && key) {
-      return executor.setCache(key, result, query.expire).then(() => {
-        return result;
-      }).catch((err) => {
-        return result;
-      });
-    } else if (key) {
-      return executor.clearCache(key).then(() => {
-        return result;
-      }).catch((err) => {
-        return result;
-      });
-    } else {
-      return result;
-    }
-  });
+  // let promise;
+  // let key = this.getCacheKey(query);
+  // if (key && query.select) {
+  //   promise = this.getCache(key);
+  // } else {
+  //   promise = Promise.resolve(null);
+  // }
+  // return promise.then((result) => {
+  //   if (result !== null) return result;
+  //   return executor.handle_sql(query);
+  // }).then((result) => {
+  //   if ((query.select || query.insert) && key) {
+  //     return executor.setCache(key, result, query.expire).then(() => {
+  //       return result;
+  //     }).catch((err) => {
+  //       return result;
+  //     });
+  //   } else if (key) {
+  //     return executor.clearCache(key).then(() => {
+  //       return result;
+  //     }).catch((err) => {
+  //       return result;
+  //     });
+  //   } else {
+  //     return result;
+  //   }
+  // });
 };
 Executor.prototype.handle_sql = function (query) {
-  let sql = "";
+  let sql = '';
   let error = null;
   if (query.insert) {
-    if (!query.value && !query.field) error = "[DB] INSERT SQL value and field not empty";
-    let sc = query.replace ? 'REPLACE' : 'INSERT';
+    if (!query.value && !query.field) error = '[DB] INSERT SQL value and field not empty';
+    const sc = query.replace ? 'REPLACE' : 'INSERT';
     sql = `${sc} INTO ${query.table_name} ${this._addValue(query.value, query.field)}`;
     if (query.update) {
-      sql += ` ON DUPLICATE KEY UPDATE ${this._setValue(query.update, query.field)}`
+      sql += ` ON DUPLICATE KEY UPDATE ${this._setValue(query.update, query.field)}`;
     }
   } else if (query.select) {
     // if(!query.where) error = "[DB] SELECT SQL where not empty";
-    let limit = query.limit ? (query.limit instanceof Array ? `LIMIT ${query.limit[0]}, ${query.limit[1]}` : `LIMIT ${query.limit}`) : "";
-    let order = query.order ? (query.order instanceof Array ? `ORDER BY ${query.order[0]} ${query.order[1]}` : `ORDER BY ${query.order}`) : "";
+    const limit = query.limit ? (query.limit instanceof Array ? `LIMIT ${query.limit[0]}, ${query.limit[1]}` : `LIMIT ${query.limit}`) : '';
+    const order = query.order ? (query.order instanceof Array ? `ORDER BY ${query.order[0]} ${query.order[1]}` : `ORDER BY ${query.order}`) : '';
     sql = `SELECT ${this._field(query.field)} FROM ${query.table_name} WHERE ${this._where(query.where)} ${order} ${limit}`;
   } else if (query.update) {
-    if (!query.where || !query.value) error = "[DB] UPDATE SQL where or value not empty";
+    if (!query.where || !query.value) error = '[DB] UPDATE SQL where or value not empty';
     sql = `UPDATE ${query.table_name} SET ${this._setValue(query.value, query.field)} WHERE ${this._where(query.where)}`;
   } else if (query.delete) {
-    if (!query.where) error = "[DB] DELETE SQL where not empty";
+    if (!query.where) error = '[DB] DELETE SQL where not empty';
     sql = `DELETE FROM ${query.table_name} WHERE ${this._where(query.where)}`;
   } else {
-    error = "[DB] SQL TYPE not empty"
+    error = '[DB] SQL TYPE not empty';
   }
   if (error) return Promise.reject(new Error(`${error} ERROR SQL: ${sql}`));
   // if(this.app.__MOCK__){
-  //   return Promise.resolve(new MockModel(this.mockData, sql).handle(query)).then((result)=>{return result});
+  // return Promise.resolve(new MockModel(this.mockData, sql)
+  // .handle(query)).then((result)=>{return result});
   // }else{
   return this.exec(sql, query.connect).then();
   // }
 };
-Executor.prototype.getCacheKey = function (query) {
-  let key_prefix = `model:cache:${query.table_name}.`;
+Executor.prototype.getCacheKey = function getCacheKey(query) {
+  const key_prefix = `model:cache:${query.table_name}.`;
   // 分析主键
   if (query.primary) {
     if (query.insert) {
-      return `${key_prefix}${query.primary}.${query.value}`
+      return `${key_prefix}${query.primary}.${query.value}`;
     }
   }
   // 分析索引
+  return '';
 };
 Executor.prototype.getCache = function (key) {
   let promise = null;
@@ -104,31 +184,31 @@ Executor.prototype.getCache = function (key) {
   return promise.then((result) => {
     if (!result) return null;
     return JSON.parse(result);
-  })
+  });
 };
 Executor.prototype.setCache = function (key, result, expire) {
   if (!key || !expire) return Promise.reject();
   result = JSON.stringify(result);
-  let redis = this.redis;
+  const r = this.redis;
   if (key instanceof Array) {
     // 索引根据查询条件走hash存储
-    return redis.hset(key[0], key[1], result).then(() => {
-      return redis.expire(expire);
+    return r.hset(key[0], key[1], result).then(() => {
+      return r.expire(expire);
     });
   } else {
-    return redis.setex(key, expire, result);
+    return r.setex(key, expire, result);
   }
 };
 Executor.prototype.clearCache = function (key) {
   if (!key) return Promise.reject();
-  let redis = this.redis;
+  const r = this.redis;
   // 删除对应索引的所有缓存
-  if (key instanceof Array) key = key[0];
-  return redis.del(key);
+  if (key instanceof Array) return r.del(key[0]);
+  else return r.del(key);
 };
 Executor.prototype.count = function (query) {
   if (!(query instanceof Query)) query = new Query().set(query);
-  return this.handle(query.count()).then((result) => { return result[0]["COUNT(*)"] });
+  return this.handle(query.count()).then((result) => { return result[0]['COUNT(*)']; });
 };
 Executor.prototype.startTransaction = function () {
   return this.mysql.transaction();
@@ -140,10 +220,10 @@ Executor.prototype.rollback = function (t) {
   return this.mysql.rollback(t);
 };
 Executor.prototype.transactions = function (cb) {
-  return this.mysql.transactions(function (connect) {
-    let query = new Query().connect(connect);
+  return this.mysql.transactions((connect) => {
+    const query = new Query().connect(connect);
     return co(cb(query));
-  })
+  });
 };
 Executor.prototype._v = function (v) {
   // let _v = "''";
@@ -159,7 +239,7 @@ Executor.prototype._f = function (f) {
   return `\`${f}\``;
 };
 Executor.prototype._addValue = function (value, field) {
-  let v = [];
+  const v = [];
   let field_tmp = [];
   if (!(value instanceof Array)) { // && typeof value[0] == Object
     value = [value];
@@ -167,100 +247,100 @@ Executor.prototype._addValue = function (value, field) {
   if (field instanceof Array) {
     field_tmp = field;
   } else {
-    for (let i in value[0]) {
+    for (const i in value[0]) {
       field_tmp.push(i);
     }
   }
-  for (let i in value) {
-    let row = value[i];
-    let tmp = [];
-    for (let i in field_tmp) {
-      tmp.push(this._v(row[field_tmp[i]]));
+  for (const i in value) {
+    const row = value[i];
+    const tmp = [];
+    for (const j in field_tmp) {
+      tmp.push(this._v(row[field_tmp[j]]));
     }
-    v.push(`(${tmp.join(",")})`);
+    v.push(`(${tmp.join(',')})`);
   }
-  for (let i in field_tmp) {
+  for (const i in field_tmp) {
     field_tmp[i] = this._f(field_tmp[i]);
   }
-  return `(${field_tmp.join(",")}) VALUES ${v.join(",")}`;
+  return `(${field_tmp.join(',')}) VALUES ${v.join(',')}`;
 };
 Executor.prototype._setValue = function (value, field) {
-  let tmp = [];
+  const tmp = [];
   if (field instanceof Array) {
-    for (let i in field) {
-      if (value[field[i]] !== "undefined") continue;
+    for (const i in field) {
+      if (value[field[i]] !== 'undefined') continue;
       let v = value[field[i]];
-      let op = "=";
+      let op = '=';
       if (v instanceof Array) {
-        op = v[0];
-        if (op == "+=") op = `=${this._f(field[i])} + `
-        else if (op == "-=") op = `=${this._f(field[i])} - `
-        v = v[1];
+        const [a, b] = v;
+        op = a;
+        if (op === '+=') op = `=${this._f(field[i])} + `;
+        else if (op === '-=') op = `=${this._f(field[i])} - `;
+        v = b;
       }
       tmp.push(`${this._f(field[i])}${op}${this._v(v)}`);
     }
   } else {
-    for (let i in value) {
+    for (const i in value) {
       let v = value[i];
-      let op = "=";
+      let op = '=';
       if (v instanceof Array) {
-        op = v[0];
-        if (op == "+=") op = `=${this._f(i)} + `
-        else if (op == "-=") op = `=${this._f(i)} - `
-        v = v[1];
+        const [a, b] = v;
+        op = a;
+        if (op === '+=') op = `=${this._f(i)} + `;
+        else if (op === '-=') op = `=${this._f(i)} - `;
+        v = b;
       }
       tmp.push(`${this._f(i)}${op}${this._v(v)}`);
     }
   }
-  return tmp.join(",");
+  return tmp.join(',');
 };
 Executor.prototype._field = function (field) {
   if (field instanceof Array) {
-    for (let i in field) {
-      field[i] = this._f(field[i])
+    for (const i in field) {
+      field[i] = this._f(field[i]);
     }
-    return field.join(",");
-  } else if (typeof (field) == 'string' && field) {
+    return field.join(',');
+  } else if (typeof (field) === 'string' && field) {
     return field;
   } else {
     return '*';
   }
 };
 Executor.prototype._where = function (where) {
-  let tmp = [];
-  if (!where || where.length == 0) tmp.push("1");
-  for (let i in where) {
-    if (typeof where[i] === "string") {
+  const tmp = [];
+  if (!where || where.length === 0) tmp.push('1');
+  for (const i in where) {
+    if (typeof where[i] === 'string') {
       tmp.push(where[i]);
-    } else if (typeof where[i] === "object") {
-      if (where[i][1] == "in") {
-        tmp.push(`${this._f(where[i][0])} ${where[i][1]} (${where[i][2].join(",")})`);
-      } else if (where[i][1] == "like") {
+    } else if (typeof where[i] === 'object') {
+      if (where[i][1] === 'in') {
+        tmp.push(`${this._f(where[i][0])} ${where[i][1]} (${where[i][2].join(',')})`);
+      } else if (where[i][1] === 'like') {
         tmp.push(`${this._f(where[i][0])} ${where[i][1]} (%${where[i][2]}%)`);
       } else {
         tmp.push(`${this._f(where[i][0])} ${where[i][1]} ${this._v(where[i][2])}`);
       }
     }
   }
-  return tmp.join(" AND ");
+  return tmp.join(' AND ');
 };
-let executor = new Executor(mysql, redis);
-let MODEL_ORDER_ASC = "asc";
-let MODEL_ORDER_DESC = "desc";
+const executor = new Executor(mysql, redis);
 
 function Record(model) {
-  let schema = model.schema;
-  let keys = schema.fields();
-  var instance = function (data, is_new = true) {
+  const { schema } = model;
+  const keys = schema.fields();
+  const instance = function (data, is_new = true) {
     this.__data = {};
     this.__change = {};
     if (data) this.__data = data;
     this.__is_new = is_new;
     if (this.__is_new) {
-      for (let i in keys) {
-        let field = keys[i];
-        if (this.__data[field] == undefined) {
-          this.__data[field] = schema.default[field] == undefined ? '' : schema.default[field];
+      for (const i in keys) {
+        const field = keys[i];
+        if (this.__data[field] === undefined) {
+          this.__data[field] = schema.default[field] === undefined ? '' : schema.default[field];
         }
       }
     }
@@ -272,7 +352,7 @@ function Record(model) {
     return model;
   };
   instance.prototype.get = function (key) {
-    return this.__data[key] == "undefined" ? "" : this.__data[key];
+    return this.__data[key] === 'undefined' ? '' : this.__data[key];
   };
   instance.prototype.set = function (key, val) {
     this.__data[key] = val;
@@ -280,7 +360,7 @@ function Record(model) {
     return this;
   };
   instance.prototype.save = function () {
-    let record = this;
+    const record = this;
     if (!this.__change) return this;
     return model.save(this).then(() => {
       record.__change = {};
@@ -295,25 +375,28 @@ function Record(model) {
   instance.prototype.toJSON = function () {
     return this.__data;
   };
-  for (let index in schema.methods) {
+  for (const index in schema.methods) {
     instance.prototype[index] = schema.methods[index];
   }
-  for (let index in keys) {
-    let field = keys[index];
-    let get = schema.get[field] || function () {
+  for (const index in keys) {
+    const field = keys[index];
+    const get = schema.get[field] || function () {
       return this.get(field);
     };
-    let set = schema.set[field] || function (value) {
+    const set = schema.set[field] || function (value) {
       return this.set(field, value);
     };
-    Object.defineProperty(instance.prototype, field, { get: get, set: set });
+    Object.defineProperty(instance.prototype, field, {
+      get,
+      set,
+    });
   }
   return instance;
 }
-let default_timestamps = {
+const default_timestamps = {
   create_time: 'create_time',
   update_time: 'update_time',
-  delete_time: 'delete_time'
+  delete_time: 'delete_time',
 };
 
 function Schema(info) {
@@ -398,7 +481,7 @@ Model.prototype.setQuery = function (query) {
   return this;
 };
 Model.prototype.resetQuery = function () {
-  let query = this.query;
+  const { query } = this;
   this.query = new Query(this);
   return query;
 };
@@ -406,40 +489,44 @@ Model.prototype.recordInstance = function (data, is_new = true) {
   return new this.Record(data, is_new);
 };
 Model.prototype.deleteByKey = function (key) {
-  let primary = this.schema.getPrimary();
-  if (!primary) throw new Error("Model do not have primary");
-  let field = this.schema.getSoftDelete();
+  const primary = this.schema.getPrimary();
+  if (!primary) throw new Error('Model do not have primary');
+  const field = this.schema.getSoftDelete();
   if (field) {
-    let data = {};
+    const data = {};
     data[field] = Date.nowTime();
     return this.updateByKey(key, data);
   } else {
-    let query = {
+    const query = {
       where: [
-        [primary, "=", key]
-      ]
+        [primary, '=', key],
+      ],
     };
     return this.deleteByQuery(query);
   }
 };
 Model.prototype.recoveryByKey = function (key) {
-  let field = this.schema.getSoftDelete();
+  const field = this.schema.getSoftDelete();
   if (field) {
-    let data = {};
+    const data = {};
     data[field] = 0;
     return this.updateByKey(key, data);
   } else {
-    throw new Error("Model not soft delete");
+    throw new Error('Model not soft delete');
   }
 };
 Model.prototype.updateByKey = function (key, data) {
-  let primary = this.schema.getPrimary();
+  const primary = this.schema.getPrimary();
   if (!primary) throw new Error('Model do not have primary');
-  let query = {
+  const query = {
     where: [
-      [primary, "=", key]
-    ]
+      [primary, '=', key],
+    ],
   };
+  const field = this.schema.getUpdateField();
+  if (field) {
+    data[field] = Date.nowTime();
+  }
   return this.updateByQuery(query, data);
 };
 Model.prototype.updateByQuery = function (query, data) {
@@ -447,7 +534,7 @@ Model.prototype.updateByQuery = function (query, data) {
   query.value = data;
   query = this.setQuery(query).resetQuery();
   return executor.handle(query).then((result) => {
-    if (result["changedRows"] > 0) {
+    if (result.changedRows > 0) {
       return true;
     } else {
       return null;
@@ -459,58 +546,58 @@ Model.prototype.deleteByQuery = function (query) {
   query.delete = true;
   query = this.setQuery(query).resetQuery();
   return executor.handle(query).then((result) => {
-    if (result["changedRows"] > 0) {
+    if (result.changedRows > 0) {
       return true;
     } else {
       return null;
       // throw new Error("Model sql handle change 0");
     }
-  })
+  });
 };
 Model.prototype.delete = function (data) {
-  let primary = this.schema.getPrimary();
-  if (!primary) throw new Error("Model do not have primary");
-  let field = this.schema.getSoftDelete();
+  const primary = this.schema.getPrimary();
+  if (!primary) throw new Error('Model do not have primary');
+  const field = this.schema.getSoftDelete();
   if (field) {
     data.set(field, Date.nowTime());
     return this.update(data);
   } else {
-    let query = {
+    const query = {
       where: [
-        [primary, "=", data.get(primary)]
-      ]
+        [primary, '=', data.get(primary)],
+      ],
     };
     return this.deleteByQuery(query);
   }
 };
 Model.prototype.recovery = function (data) {
-  let field = this.schema.getSoftDelete();
+  const field = this.schema.getSoftDelete();
   if (field) {
     data.set(field, 0);
     return this.update(data);
   } else {
-    throw new Error("Model not soft delete");
+    throw new Error('Model not soft delete');
   }
 };
 Model.prototype.getByKey = function (key) {
-  let primary = this.schema.getPrimary();
-  if (!primary) throw new Error("Model do not have primary");
-  let where = [
-    [primary, "=", key]
+  const primary = this.schema.getPrimary();
+  if (!primary) throw new Error('Model do not have primary');
+  const where = [
+    [primary, '=', key],
   ];
   return this.find(where, [0, 1]).then((result) => {
     return result ? (result[0] || null) : null;
   });
 };
 Model.prototype.find = function (where, limit, order) {
-  let field = this.schema.getSoftDelete();
+  const field = this.schema.getSoftDelete();
   if (field) {
-    where.push([field, "=", 0]);
+    where.push([field, '=', 0]);
   }
-  let query = {
-    where: where,
-    limit: limit,
-    order: order
+  const query = {
+    where,
+    limit,
+    order,
   };
   return this.findByQuery(query);
 };
@@ -519,7 +606,7 @@ Model.prototype.findByQuery = function (query) {
   query = this.setQuery(query).resetQuery();
   return executor.handle(query).then((result) => {
     if (!result || result.length <= 0) return [];
-    for (let i in result) {
+    for (const i in result) {
       result[i] = this.recordInstance(result[i], false);
     }
     return result;
@@ -537,35 +624,35 @@ Model.prototype.one = function (query) {
 };
 Model.prototype.count = function (where) {
   if (!where) where = [];
-  let field = this.schema.getSoftDelete();
+  const field = this.schema.getSoftDelete();
   if (field) {
-    where.push([field, "=", 0]);
+    where.push([field, '=', 0]);
   }
-  let query = this.setQuery({
+  const query = this.setQuery({
     table_name: this.table_name,
-    where: where
+    where,
   }).resetQuery();
   return executor.count(query);
 };
 Model.prototype.update = function (data) {
-  let model = this;
-  let primary = this.schema.getPrimary();
-  if (!primary) throw new Error("Model do not have primary");
-  let field = this.schema.getUpdateField();
-  this.emit("beforeUpdate", data);
+  const model = this;
+  const primary = this.schema.getPrimary();
+  if (!primary) throw new Error('Model do not have primary');
+  const field = this.schema.getUpdateField();
+  this.emit('beforeUpdate', data);
   if (field) {
     data.set(field, Date.nowTime());
   }
-  let change = data.__change;
+  const change = data.__change;
   if (primary && this.schema.isAutoIncrement()) delete change[primary];
-  let query = {
+  const query = {
     where: [
-      [primary, "=", data.get(primary)]
-    ]
+      [primary, '=', data.get(primary)],
+    ],
   };
   return this.updateByQuery(query, change).then((result) => {
     result = result ? data : result;
-    model.emit("afterUpdate", data);
+    model.emit('afterUpdate', data);
     return result;
   });
 };
@@ -575,24 +662,24 @@ Model.prototype.insert = function (data, query = {}, update = {}) {
   });
 };
 Model.prototype.insertBatch = function (list, query = {}, update = {}) {
-  let model = this;
-  let time = Date.nowTime();
-  let create_field = this.schema.getCreateField();
-  let update_field = this.schema.getUpdateField();
-  let delete_field = this.schema.getSoftDelete();
-  let primary = this.schema.isAutoIncrement() ? this.schema.getPrimary() : false;
-  let keys = this.schema.fields();
-  let values = [];
-  for (var index in list) {
-    var data = list[index];
+  const model = this;
+  const time = Date.nowTime();
+  const create_field = this.schema.getCreateField();
+  const update_field = this.schema.getUpdateField();
+  const delete_field = this.schema.getSoftDelete();
+  const primary = this.schema.isAutoIncrement() ? this.schema.getPrimary() : false;
+  const keys = this.schema.fields();
+  const values = [];
+  for (const index in list) {
+    let data = list[index];
     if (!(data instanceof this.Record)) data = this.recordInstance(data, true);
-    this.emit("beforeInsert", data);
+    this.emit('beforeInsert', data);
     if (create_field) data.set(create_field, time);
     if (update_field) data.set(update_field, time);
     if (delete_field) data.set(delete_field, 0);
-    let value = {};
+    const value = {};
     for (let i = 0; i < keys.length; i++) {
-      if (keys[i] == primary) {
+      if (keys[i] === primary) {
         continue;
       }
       value[keys[i]] = data.get(keys[i]);
@@ -609,17 +696,17 @@ Model.prototype.insertBatch = function (list, query = {}, update = {}) {
   query.update = update;
   query = this.setQuery(query).resetQuery();
   return executor.handle(query).then((result) => {
-    let field = model.schema.getPrimary();
-    let id = model.schema.isAutoIncrement() ? result["insertId"] - list.length : 0;
-    for (var index in list) {
-      var data = list[index];
+    const field = model.schema.getPrimary();
+    let id = model.schema.isAutoIncrement() ? result.insertId - list.length : 0;
+    for (const index in list) {
+      const data = list[index];
       data.__is_new = false;
       if (model.schema.isAutoIncrement()) {
         id++;
         data.set(field, id);
       }
       data.change = {};
-      model.emit("afterInsert", data);
+      model.emit('afterInsert', data);
     }
     return list;
   });
@@ -628,7 +715,7 @@ Model.prototype.replace = function (data) {
   return this.insert(data, { replace: true });
 };
 Model.prototype.save = function (data) {
-  let primary = this.schema.getPrimary();
+  const primary = this.schema.getPrimary();
   if (!primary) throw new Error('Model do not have primary');
   if (data.__is_new) {
     return this.insert(data);
@@ -637,78 +724,7 @@ Model.prototype.save = function (data) {
   }
 };
 
-function Query(model) {
-  this.query = {};
-  if (model) {
-    this.model = model;
-    this.schema = model.schema;
-    this.table_name(model.table_name);
-    if (this.schema.expire()) {
-      this.query.primary = this.schema.getPrimary();
-      this.query.index = this.schema.index();
-      this.query.expire = this.schema.expire();
-    }
-  }
-}
-Query.prototype.table_name = function (table_name) {
-  this.query.table_name = table_name;
-  return this;
-};
-Query.prototype.set = function (query) {
-  if (query instanceof Query) {
-    Object.assign(this.query, query.query);
-  } else {
-    Object.assign(this.query, query);
-  }
-  return this;
-};
-Query.prototype.get = function () {
-  return this.query;
-};
-Query.prototype.limit = function (offset = 0, num = 0) {
-  this.query.limit = [offset, num];
-  return this;
-};
-Query.prototype.select = function () {
-  this.query.select = true;
-  return this;
-};
-Query.prototype.one = function () {
-  this.query.limit = [0, 1];
-  return this;
-};
-Query.prototype.count = function () {
-  this.query.field = 'COUNT(*)';
-  this.query.count = true;
-  this.query.select = true;
-  if (!this.query.where || this.query.where.length == 0) this.query.where = '1';
-  return this;
-};
-Query.prototype.order = function (field, d) {
-  this.query.order = [field, d ? d : MODEL_ORDER_DESC];
-  return this;
-};
-Query.prototype.all = function () {
-  this.query.limit = [];
-  return this.select();
-};
-Query.prototype.field = function (field) {
-  this.query.field = field;
-  return this;
-};
-Query.prototype.delete = function () {
-  this.query.delete = true;
-  return this;
-};
-Query.prototype.update = function (data) {
-  this.query.update = true;
-  this.query.value = data;
-  return this;
-};
-Query.prototype.connect = function (connect) {
-  this.query.connect = connect;
-  return this;
-};
+
 module.exports.executor = executor;
 module.exports.Model = Model;
 module.exports.Record = Record;

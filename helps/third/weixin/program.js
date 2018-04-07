@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 获取用户登录凭证：小程序内部
  * @param code
