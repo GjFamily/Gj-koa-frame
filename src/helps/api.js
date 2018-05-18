@@ -7,10 +7,9 @@ const config = require('../config');
 function send(options) {
   return new Promise((resolve, reject) => {
     request(options, (error, response) => {
-      if (!error && response.statusCode === 200) {
-        resolve(response.body, response);
+      if (!error) {
+        resolve({ body: response.body, res: response });
       } else {
-        console.log(error);
         reject(error || new Error('接口请求错误'));
       }
     });
@@ -35,6 +34,16 @@ function post(url, data, headers, options) {
   if (!headers) headers = {};
   if (!options) options = {};
   options.method = 'POST';
+  options.url = url;
+  options.body = data;
+  options.headers = headers;
+  return send(options);
+}
+
+function put(url, data, headers, options) {
+  if (!headers) headers = {};
+  if (!options) options = {};
+  options.method = 'PUT';
   options.url = url;
   options.body = data;
   options.headers = headers;
@@ -67,9 +76,9 @@ function get(url, data, headers, options) {
 
 function wrap_get(server, api, data, d, buffer) {
   if (config.NODE_ENV === 'test') return Promise.resolve(d);
-  return get(`http://${server.host}:${server.port}${api}`, data, { Token: server.token, 'Content-type': 'application/json' }).then((result) => {
-    if (buffer) return result;
-    return JSON.parse(result);
+  return get(`http://${server.host}:${server.port}${api}`, data, { Token: server.token, 'Content-type': 'application/json' }).then(({ body }) => {
+    if (buffer) return body;
+    return JSON.parse(body);
   }).then((result) => {
     if (buffer) return result;
     if (result.status !== 200) throw Error(result.message);
@@ -80,9 +89,9 @@ function wrap_get(server, api, data, d, buffer) {
 function wrap_post(server, api, data, d, buffer) {
   if (config.NODE_ENV === 'test') return Promise.resolve(d);
   api = formatUrl(api, data);
-  return post(`http://${server.host}:${server.port}${api}`, JSON.stringify(data), { Token: server.token, 'Content-type': 'application/json' }).then((result) => {
-    if (buffer) return result;
-    return JSON.parse(result);
+  return post(`http://${server.host}:${server.port}${api}`, JSON.stringify(data), { Token: server.token, 'Content-type': 'application/json' }).then(({ body }) => {
+    if (buffer) return body;
+    return JSON.parse(body);
   }).then((result) => {
     if (buffer) return result;
     if (result.status !== 200) throw Error(result.message);
@@ -93,9 +102,9 @@ function wrap_post(server, api, data, d, buffer) {
 function wrap_post_form(server, api, data, d, buffer) {
   if (config.NODE_ENV === 'test') return Promise.resolve(d);
   api = formatUrl(api, data);
-  return post(`http://${server.host}:${server.port}${api}`, null, { Token: server.token }, { formData: data }).then((result) => {
-    if (buffer) return result;
-    return JSON.parse(result);
+  return post(`http://${server.host}:${server.port}${api}`, null, { Token: server.token }, { formData: data }).then(({ body }) => {
+    if (buffer) return body;
+    return JSON.parse(body);
   }).then((result) => {
     if (buffer) return result;
     if (result.status !== 200) throw Error(`${result.status} ${result.message}`);
@@ -113,6 +122,7 @@ function wrap_proxy(server) {
   };
 }
 module.exports.post = post;
+module.exports.put = put;
 module.exports.form = form;
 module.exports.get = get;
 module.exports.wrap_get = wrap_get;

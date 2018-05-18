@@ -205,3 +205,14 @@ module.exports.rmdirSync = function (dirname) {
     return true;
   }
 };
+
+module.exports.formatData = function (fields, data) {
+  let _data = {};
+  for (let i in fields) {
+    let field = fields[i];
+    if (data[field] || data[field] === 0) {
+      _data[field] = data[field];
+    }
+  }
+  return _data;
+};

@@ -6,6 +6,7 @@ const parse = function (cb, opts) {
     const ctx = this;
     const req = ctx.request;
     let kwarg = {};
+    console.log(ctx.path);
     if (opts) {
       opts.forEach((value) => {
         if (value.body) { // json格式，或者text格式
@@ -16,7 +17,8 @@ const parse = function (cb, opts) {
         } else if (value.path) { // 路径
           kwarg[value.name] = ctx.params[value.name];
         } else if (value.form) { // 表单提交
-          kwarg[value.name] = req.fields[value.name];
+          kwarg[value.name] = (req.fields && req.fields[value.name]) || req.body[value.name];
+          if (value.array) kwarg[value.name] = kwarg[value.name] ? kwarg[value.name].split(',') : [];
         } else if (value.cache) {
           kwarg[value.name] = ctx.cache[value.cache === true ? value.name : value.cache];
         } else if (value.all) {
@@ -41,7 +43,13 @@ const parse = function (cb, opts) {
       // 多个路由验证问题，需要规范扩展
       // yield next;
     } catch (err) {
-      if (err.log || !err.no) ctx.log.error(err);
+      if (err.log || !err.no) {
+        if (ctx.log) {
+          ctx.log.error(err);
+        } else {
+          console.log(err);
+        }
+      }
       ctx.body = {
         status: 500,
         message: err.message,

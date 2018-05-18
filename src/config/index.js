@@ -3,10 +3,10 @@
 let local = {};
 const NODE_ENV = process.env.NODE_ENV || 'development';
 try {
-  local = require('../config.' + NODE_ENV);
+  local = require('../../config.' + NODE_ENV);
 } catch (e) {
   try {
-    local = require('../config');
+    local = require('../../config');
   } catch (ee) {
     local = {};
   }
@@ -31,5 +31,6 @@ const env_config = {
 // Default Configuration
 // ========================================================
 const config = Object.assign(env_config[NODE_ENV], local);
+
 module.exports = config;
 module.exports.NODE_ENV = NODE_ENV;

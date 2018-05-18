@@ -318,7 +318,7 @@ Executor.prototype._where = function (where) {
       if (where[i][1] === 'in') {
         tmp.push(`${this._f(where[i][0])} ${where[i][1]} (${where[i][2].join(',')})`);
       } else if (where[i][1] === 'like') {
-        tmp.push(`${this._f(where[i][0])} ${where[i][1]} (%${where[i][2]}%)`);
+        tmp.push(`${this._f(where[i][0])} ${where[i][1]} '%${where[i][2]}%'`);
       } else {
         tmp.push(`${this._f(where[i][0])} ${where[i][1]} ${this._v(where[i][2])}`);
       }
@@ -340,7 +340,7 @@ function Record(model) {
       for (const i in keys) {
         const field = keys[i];
         if (this.__data[field] === undefined) {
-          this.__data[field] = schema.default[field] === undefined ? '' : schema.default[field];
+          this.__data[field] = schema.default[field] === undefined ? null : schema.default[field];
         }
       }
     }
@@ -403,6 +403,7 @@ function Schema(info) {
   this.auto_increment = info.auto_increment || false;
   this.primary = info.primary || false;
   this._fields = info.fields;
+  this._baseFields = Array.from(info.fields);
   this._index = info.index || false;
   this._expire = info.expire || 0;
   this.default = info.default || {};
@@ -461,6 +462,9 @@ Schema.prototype.getSoftDelete = function () {
 Schema.prototype.fields = function () {
   return this._fields;
 };
+Schema.prototype.baseFields = function () {
+  return this._baseFields;
+};
 Schema.prototype.index = function () {
   return this._index;
 };
@@ -494,7 +498,7 @@ Model.prototype.deleteByKey = function (key) {
   const field = this.schema.getSoftDelete();
   if (field) {
     const data = {};
-    data[field] = Date.nowTime();
+    data[field] = new Date();
     return this.updateByKey(key, data);
   } else {
     const query = {
@@ -509,7 +513,7 @@ Model.prototype.recoveryByKey = function (key) {
   const field = this.schema.getSoftDelete();
   if (field) {
     const data = {};
-    data[field] = 0;
+    data[field] = null;
     return this.updateByKey(key, data);
   } else {
     throw new Error('Model not soft delete');
@@ -525,7 +529,7 @@ Model.prototype.updateByKey = function (key, data) {
   };
   const field = this.schema.getUpdateField();
   if (field) {
-    data[field] = Date.nowTime();
+    data[field] = new Date();
   }
   return this.updateByQuery(query, data);
 };
@@ -559,7 +563,7 @@ Model.prototype.delete = function (data) {
   if (!primary) throw new Error('Model do not have primary');
   const field = this.schema.getSoftDelete();
   if (field) {
-    data.set(field, Date.nowTime());
+    data.set(field, new Date());
     return this.update(data);
   } else {
     const query = {
@@ -573,13 +577,13 @@ Model.prototype.delete = function (data) {
 Model.prototype.recovery = function (data) {
   const field = this.schema.getSoftDelete();
   if (field) {
-    data.set(field, 0);
+    data.set(field, null);
     return this.update(data);
   } else {
     throw new Error('Model not soft delete');
   }
 };
-Model.prototype.getByKey = function (key) {
+Model.prototype.findByKey = function (key) {
   const primary = this.schema.getPrimary();
   if (!primary) throw new Error('Model do not have primary');
   const where = [
@@ -591,8 +595,9 @@ Model.prototype.getByKey = function (key) {
 };
 Model.prototype.find = function (where, limit, order) {
   const field = this.schema.getSoftDelete();
+  where = where || [];
   if (field) {
-    where.push([field, '=', 0]);
+    where.push([field, 'is', null]);
   }
   const query = {
     where,
@@ -602,6 +607,7 @@ Model.prototype.find = function (where, limit, order) {
   return this.findByQuery(query);
 };
 Model.prototype.findByQuery = function (query) {
+  query = query || new Query();
   query.select = true;
   query = this.setQuery(query).resetQuery();
   return executor.handle(query).then((result) => {
@@ -612,10 +618,6 @@ Model.prototype.findByQuery = function (query) {
     return result;
   });
 };
-Model.prototype.findList = function (query, page, number) {
-  if (number >= 0) query.limit = [page ? (page - 1) * number : 0, number];
-  return this.findByQuery(query);
-};
 Model.prototype.one = function (query) {
   query.limit = 1;
   return this.findByQuery(query).then((result) => {
@@ -623,16 +625,35 @@ Model.prototype.one = function (query) {
   });
 };
 Model.prototype.count = function (where) {
-  if (!where) where = [];
+  where = where || [];
   const field = this.schema.getSoftDelete();
   if (field) {
-    where.push([field, '=', 0]);
+    where.push([field, 'is', null]);
   }
   const query = this.setQuery({
     table_name: this.table_name,
     where,
   }).resetQuery();
   return executor.count(query);
+};
+Model.prototype.findListAndCount = function (where, page, number, order) {
+  return this.count(where)
+    .then((count) => {
+      if (count > 0) {
+        return this.find(where, [page ? (page - 1) * number : 0, number], order)
+          .then((list) => {
+            return {
+              count,
+              list,
+            };
+          });
+      } else {
+        return {
+          count,
+          list: [],
+        };
+      }
+    });
 };
 Model.prototype.update = function (data) {
   const model = this;
@@ -641,7 +662,7 @@ Model.prototype.update = function (data) {
   const field = this.schema.getUpdateField();
   this.emit('beforeUpdate', data);
   if (field) {
-    data.set(field, Date.nowTime());
+    data.set(field, new Date());
   }
   const change = data.__change;
   if (primary && this.schema.isAutoIncrement()) delete change[primary];
@@ -656,14 +677,14 @@ Model.prototype.update = function (data) {
     return result;
   });
 };
-Model.prototype.insert = function (data, query = {}, update = {}) {
+Model.prototype.insert = function (data, query = null, update = null) {
   return this.insertBatch([data], query, update).then((result) => {
     return result[0] || null;
   });
 };
-Model.prototype.insertBatch = function (list, query = {}, update = {}) {
+Model.prototype.insertBatch = function (list, query = null, update = null) {
   const model = this;
-  const time = Date.nowTime();
+  const time = new Date();
   const create_field = this.schema.getCreateField();
   const update_field = this.schema.getUpdateField();
   const delete_field = this.schema.getSoftDelete();
@@ -676,7 +697,7 @@ Model.prototype.insertBatch = function (list, query = {}, update = {}) {
     this.emit('beforeInsert', data);
     if (create_field) data.set(create_field, time);
     if (update_field) data.set(update_field, time);
-    if (delete_field) data.set(delete_field, 0);
+    if (delete_field) data.set(delete_field, null);
     const value = {};
     for (let i = 0; i < keys.length; i++) {
       if (keys[i] === primary) {

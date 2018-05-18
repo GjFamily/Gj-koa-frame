@@ -1,0 +1,9 @@
+{
+  "apps": [{
+    "name": "robot-agent",
+    "interpreter": "babel-node",
+    "script": "agent.js",
+    "instances": "1",
+    "cwd": "./dist"
+  }]
+}

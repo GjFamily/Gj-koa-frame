@@ -29,16 +29,17 @@ const auth = function (opts) {
   opts.role = opts.role || null;
   opts.role_key = opts.role_key || `${opts.role}_id`;
   opts.exclude = opts.exclude || [];
-  opts.id = 'id';
+  opts.id = opts.id || 'id';
   return {
     // 验证当前访问授权状态
     * session(next) {
       // 设置默认的缓存器，如果安装session，则存储在session中
       this.cache = this.session || {};
       const filter = filterPath(this, opts.exclude);
+      const auth_result = opts.auth && !(yield opts.auth(this));
       if (!filter) {
         if (!this.cache[opts.id]) return yield opts.noLogin(this);
-        if (opts.auth && !(yield opts.auth(this))) return yield opts.noAuth(this);
+        if (auth_result) return yield opts.noAuth(this);
       }
 
       if (this.cache[opts.id]) {
@@ -49,8 +50,9 @@ const auth = function (opts) {
     },
     * token(next) {
       const filter = filterPath(this, opts.exclude);
+      const auth_result = opts.auth && !(yield opts.auth(this));
       if (!filter) {
-        if (opts.auth && !(yield opts.auth(this))) return yield opts.noAuth(this);
+        if (auth_result) return yield opts.noAuth(this);
       }
       yield next;
       return null;

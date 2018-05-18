@@ -1,0 +1,1865 @@
+swagger: "2.0"
+info:
+  description: "机器人App"
+  version: "1.0.0"
+  title: "Robot App Api"
+  contact:
+    email: "372290258@qq.com"
+host: “robot.weima123.cn”
+basePath: "/app"
+tags:
+- name: "auth"
+  description: "验证接口"
+- name: "robot"
+  description: "机器人信息"
+- name: "base"
+  description: "运营信息"
+- name: "common"
+  description: "公共接口"
+- name: "sound"
+  description: "磨耳朵接口"
+- name: "book"
+  description: "绘本接口"
+- name: "stat"
+  description: "成就统计"
+schemes:
+- "http"
+paths:
+  /auth/register:
+    post:
+      x-swagger-router-controller: "auth"
+      tags:
+      - "auth"
+      summary: "用户注册"
+      description: "用户注册app"
+      operationId: "register"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "注册信息"
+        required: true
+        schema:
+          $ref: "#/definitions/Register"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/User"
+  /auth/login:
+    post:
+      x-swagger-router-controller: "auth"
+      tags:
+      - "auth"
+      summary: "用户登录"
+      description: "用户登录app"
+      operationId: "login"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "注册信息"
+        required: true
+        schema:
+          $ref: "#/definitions/Login"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/User"
+  /auth/refresh:
+    post:
+      x-swagger-router-controller: "auth"
+      tags:
+      - "auth"
+      summary: "用户登录刷新"
+      description: "用户登录刷新"
+      operationId: "refresh"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "注册信息"
+        required: true
+        schema:
+          $ref: "#/definitions/Refresh"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/User"
+      security:
+      - token: []
+  /auth/forget:
+    post:
+      x-swagger-router-controller: "auth"
+      tags:
+      - "auth"
+      summary: "忘记密码"
+      description: "用户密码找回"
+      operationId: "forget"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "重置密码"
+        required: true
+        schema:
+          $ref: "#/definitions/Forget"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+  /my/password:
+    post:
+      x-swagger-router-controller: "auth"
+      tags:
+      - "auth"
+      summary: "修改密码"
+      description: "用户修改密码"
+      operationId: "password"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "修改密码"
+        required: true
+        schema:
+          $ref: "#/definitions/Password"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+  /my/info:
+    get:
+      x-swagger-router-controller: "user"
+      tags:
+      - "user"
+      summary: "获取用户信息"
+      description: "获取用户信息"
+      operationId: "getUserInfo"
+      produces:
+      - "application/json"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/User"
+      security:
+      - token: []
+    post:
+      x-swagger-router-controller: "user"
+      tags:
+      - "user"
+      summary: "修改用户信息"
+      description: "修改用户信息"
+      operationId: "putUserInfo"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "用户信息"
+        required: true
+        schema:
+          $ref: "#/definitions/UserInfo"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/User"
+      security:
+      - token: []
+  /robot/info:
+    get:
+      x-swagger-router-controller: "robot"
+      tags:
+      - "robot"
+      summary: "获取机器人信息"
+      description: "获取机器人信息"
+      # operationId: "get"
+      produces:
+      - "application/json"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Robot"
+      security:
+      - token: []
+    post:
+      x-swagger-router-controller: "robot"
+      tags:
+      - "robot"
+      summary: "绑定机器人"
+      description: "绑定机器人"
+      # operationId: "get"
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "code"
+        in: "formData"
+        description: "机器人识别码"
+        required: true
+        type: "string"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Robot"
+      security:
+      - token: []
+    put:
+      x-swagger-router-controller: "robot"
+      tags:
+      - "robot"
+      summary: "更新机器人信息"
+      description: "更新机器人信息"
+      # operationId: "edit"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "机器人信息"
+        required: true
+        schema:
+          $ref: "#/definitions/RobotInfo"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+  /robot/night:
+    get:
+      x-swagger-router-controller: "robot"
+      tags:
+      - "robot"
+      summary: "获取机器人夜间模式信息"
+      description: "获取机器人夜间模式信息"
+      # operationId: "getNight"
+      produces:
+      - "application/json"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RobotNight"
+      security:
+      - token: []
+    put:
+      x-swagger-router-controller: "robot"
+      tags:
+      - "robot"
+      summary: "修改机器人夜间模式信息"
+      description: "更新机器人夜间模式信息"
+      # operationId: "editNight"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "机器人夜间模式信息"
+        required: true
+        schema:
+          $ref: "#/definitions/RobotNightInfo"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+  /robot/anti_addiction:
+    get:
+      x-swagger-router-controller: "robot"
+      tags:
+      - "robot"
+      summary: "获取机器人防沉迷信息"
+      description: "获取机器人防沉迷信息"
+      # operationId: "getAntiAddiction"
+      produces:
+      - "application/json"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/RobotAntiAddiction"
+      security:
+      - token: []
+    put:
+      x-swagger-router-controller: "robot"
+      tags:
+      - "robot"
+      summary: "修改机器人防沉迷信息"
+      description: "更新机器人防沉迷信息"
+      # operationId: "editAntiAddiction"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "机器人防沉迷信息"
+        required: true
+        schema:
+          $ref: "#/definitions/RobotAntiAddictionInfo"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+  /robot/chat:
+    get:
+      x-swagger-router-controller: "robot"
+      tags:
+      - "robot"
+      summary: "聊天记录"
+      description: "聊天记录"
+      # operationId: "get"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "max_id"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "最大id号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      - name: "feature"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "功能：1蜜语，2对讲机"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/Chat"
+      security:
+      - token: []
+  /message:
+    get:
+      x-swagger-router-controller: "message"
+      tags:
+      - "base"
+      summary: "消息"
+      description: "获取消息"
+      # operationId: "get"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/Message"
+      security:
+      - token: []
+  /banner/list:
+    get:
+      x-swagger-router-controller: "banner"
+      tags:
+      - "base"
+      summary: "Banner列表"
+      description: "获取消息"
+      # operationId: "get"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/Banner"
+      security:
+      - token: []
+  /banner/{banner_id}:
+    get:
+      x-swagger-router-controller: "banner"
+      tags:
+      - "base"
+      summary: "Banner列表"
+      description: "获取消息"
+      # operationId: "get"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "banner_id"
+        in: "path"
+        required: true
+        type: "integer"
+        description: "Banner：id"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/BannerDetail"
+      security:
+      - token: []
+  /sound/search:
+    get:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "查询磨耳朵"
+      description: "查询磨耳朵"
+      # operationId: "search"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "search"
+        in: "query"
+        required: true
+        type: "string"
+        description: "查询关键字"
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/SoundAlbum"
+      security:
+      - token: []
+  /sound/category:
+    get:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "获取磨耳朵分类"
+      description: "获取磨耳朵分类"
+      # operationId: "getCategory"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/SoundCategory"
+      security:
+      - token: []
+  /sound/category/{category_id}:
+    get:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "获取磨耳朵专辑"
+      description: "获取磨耳朵专辑"
+      # operationId: "getCategoryAlbum"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "category_id"
+        in: "path"
+        required: true
+        description: "分类id"
+        type: "string"
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/SoundAlbum"
+      security:
+      - token: []
+  /sound/album/{album_id}:
+    get:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "获取磨耳朵专辑"
+      description: "获取磨耳朵专辑"
+      # operationId: "getAlbum"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "album_id"
+        in: "path"
+        required: true
+        type: "integer"
+        description: "专辑id"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/SoundAlbumDetail"
+      security:
+      - token: []
+  /sound/collect/album:
+    get:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "获取磨耳朵专辑收藏"
+      description: "获取磨耳朵专辑收藏"
+      # operationId: "getCollectAlbum"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/SoundAlbum"
+      security:
+      - token: []
+    post:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "收藏专辑"
+      description: "收藏专辑"
+      # operationId: "collectAlbum"
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "album_id"
+        in: "formData"
+        description: "收藏专辑数据"
+        required: true
+        type: "integer"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+    delete:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "删除收藏专辑"
+      description: "删除收藏专辑"
+      # operationId: "collectAlbum"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "album_id"
+        in: "query"
+        description: "收藏专辑数据"
+        required: true
+        type: "integer"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+  /sound/collect/voice:
+    get:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "获取磨耳朵音频收藏"
+      description: "获取磨耳朵音频收藏"
+      # operationId: "getCollectVoice"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/SoundVoice"
+      security:
+      - token: []
+    post:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "收藏音频"
+      description: "收藏音频"
+      # operationId: "collectVoice"
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "voice_id"
+        in: "formData"
+        description: "收藏音频数据"
+        required: true
+        type: "integer"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+    delete:
+      x-swagger-router-controller: "sound"
+      tags:
+      - "sound"
+      summary: "删除收藏音频"
+      description: "删除收藏音频"
+      # operationId: "collectVoice"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "voice_id"
+        in: "query"
+        description: "收藏音频数据"
+        required: true
+        type: "integer"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+  /book/search:
+    get:
+      x-swagger-router-controller: "book"
+      tags:
+      - "book"
+      summary: "查询绘本"
+      description: "查询绘本"
+      # operationId: "search"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "search"
+        in: "query"
+        required: true
+        type: "string"
+        description: "查询关键字"
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/BookAlbum"
+      security:
+      - token: []
+  /book/category:
+    get:
+      x-swagger-router-controller: "book"
+      tags:
+      - "book"
+      summary: "获取绘本分类"
+      description: "获取绘本分类"
+      # operationId: "getCategory"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/BookCategory"
+      security:
+      - token: []
+  /book/category/{category_id}:
+    get:
+      x-swagger-router-controller: "book"
+      tags:
+      - "book"
+      summary: "获取绘本"
+      description: "获取分类下的绘本"
+      # operationId: "getCategoryAlbum"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "category_id"
+        in: "path"
+        required: true
+        type: "integer"
+        description: "分类id"
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/BookAlbum"
+      security:
+      - token: []
+  /book/album/{album_id}:
+    get:
+      x-swagger-router-controller: "book"
+      tags:
+      - "book"
+      summary: "获取磨耳朵专辑"
+      description: "获取磨耳朵专辑"
+      # operationId: "getAlbum"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "album_id"
+        in: "path"
+        required: true
+        type: "integer"
+        description: "绘本id"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/BookAlbumDetail"
+      security:
+      - token: []
+  /book/scan/album:
+    get:
+      x-swagger-router-controller: "book"
+      tags:
+      - "book"
+      summary: "获取绘本购买列表"
+      description: "获取绘本购买列表"
+      # operationId: "getScanAlbum"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "查询页号"
+      - name: "number"
+        in: "query"
+        required: true
+        type: "integer"
+        description: "每页数量"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "object"
+                properties:
+                  count:
+                    type: "integer"
+                  list:
+                    type: "array"
+                    items:
+                      $ref: "#/definitions/BookAlbum"
+      security:
+      - token: []
+    post:
+      x-swagger-router-controller: "book"
+      tags:
+      - "book"
+      summary: "扫描绘本"
+      description: "扫描绘本"
+      # operationId: "scanAlbum"
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "number"
+        in: "formData"
+        description: "绘本书号"
+        required: true
+        type: "integer"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+    delete:
+      x-swagger-router-controller: "book"
+      tags:
+      - "book"
+      summary: "删除扫描绘本"
+      description: "删除扫描绘本"
+      # operationId: "scanAlbum"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "album_id"
+        in: "query"
+        description: "绘本id"
+        required: true
+        type: "integer"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+  /feedback:
+    post:
+      x-swagger-router-controller: "feedback"
+      tags:
+      - "base"
+      summary: "提交反馈"
+      description: "用户提交在线反馈"
+      # operationId: "post"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "body"
+        in: "body"
+        description: "反馈信息"
+        required: true
+        schema:
+          $ref: "#/definitions/FeedbackInfo"
+      responses:
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+  /guide:
+    get:
+      x-swagger-router-controller: "guide"
+      tags:
+      - "base"
+      summary: "获取使用手册"
+      description: "获取使用手册"
+      # operationId: "all"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "array"
+                items:
+                  $ref: "#/definitions/Guide"
+  /version/app:
+    get:
+      x-swagger-router-controller: "version"
+      tags:
+      - "base"
+      summary: "获取app版本信息"
+      description: "获取app版本信息"
+      # operationId: "appVersion"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/VersionApp"
+  /version/robot:
+    get:
+      x-swagger-router-controller: "version"
+      tags:
+      - "base"
+      summary: "获取robot版本信息"
+      description: "获取robot版本信息"
+      # operationId: "robotVersion"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/VersionRobot"
+  /stat/{type}/top:
+    get:
+      x-swagger-router-controller: "stat"
+      tags:
+      - "stat"
+      summary: "获取统计排行榜"
+      description: "获取统计排行榜"
+      # operationId: "top"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "type"
+        in: "path"
+        description: "类型：spell，read"
+        required: true
+        type: "string"
+      - name: "module"
+        in: "query"
+        description: "模块：letter，word，book_album"
+        required: true
+        type: "string"
+      - name: "top"
+        in: "query"
+        description: "前几位"
+        required: true
+        type: "integer"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "array"
+                items:
+                  $ref: "#/definitions/StatTop"
+      security:
+      - token: []
+  /stat/{type}/week:
+    get:
+      x-swagger-router-controller: "stat"
+      tags:
+      - "stat"
+      summary: "获取一周统计"
+      description: "获取一周统计"
+      # operationId: "week"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "type"
+        in: "path"
+        description: "类型：spell，read"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "array"
+                items:
+                  $ref: "#/definitions/StatWeek"
+      security:
+      - token: []
+  /stat/{type}/aggregation:
+    get:
+      x-swagger-router-controller: "stat"
+      tags:
+      - "stat"
+      summary: "获取汇总统计"
+      description: "获取汇总统计"
+      # operationId: "aggregation"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "type"
+        in: "path"
+        description: "类型：spell，read"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "integer"
+              result:
+                type: "array"
+                items:
+                  $ref: "#/definitions/StatAggregation"
+      security:
+      - token: []
+  /common/sms:
+    post:
+      x-swagger-router-controller: "common"
+      tags:
+      - "common"
+      summary: "发送用户手机验证"
+      description: "通过用户输入的邮箱，发送邮箱验证码"
+      operationId: "sendUserMobile"
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "mobile"
+        in: "formData"
+        description: "手机号"
+        required: true
+        type: "string"
+      - name: "area"
+        in: "formData"
+        description: "区号"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/SmsResponse"
+        400:
+          description: "Invalid Mobile"
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+  /common/mobile:
+    post:
+      x-swagger-router-controller: "common"
+      tags:
+      - "common"
+      summary: "验证手机状态"
+      description: "验证手机状态"
+      operationId: "validMobile"
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "mobile"
+        in: "formData"
+        description: "手机号"
+        required: true
+        type: "string"
+      - name: "area"
+        in: "formData"
+        description: "区号"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        400:
+          description: "Invalid Mobile"
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+  /common/upload/talk:
+    post:
+      x-swagger-router-controller: "common"
+      tags:
+      - "common"
+      summary: "获取上传安全信息"
+      description: "获取上传安全信息"
+      operationId: "getTalkSecurity"
+      consumes:
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "path"
+        in: "formData"
+        description: "上传路径"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/SecurityOSS"
+        400:
+          description: "Invalid Mobile"
+        405:
+          description: "Invalid operation"
+          schema:
+            $ref: "#/definitions/ApiResponse"
+      security:
+      - token: []
+securityDefinitions:
+  token:
+    type: "apiKey"
+    name: "token"
+    in: "header"
+definitions:
+  Register:
+    type: "object"
+    properties:
+      mobile:
+        type: "string"
+      password:
+        type: "string"
+      mobile_code:
+        type: "string"
+        description: "sms发送标识,发送接口返回"
+      verification_code:
+        type: "string"
+        description: "手机收到的短信码"
+  Login:
+    type: "object"
+    properties:
+      mobile:
+        type: "string"
+      password:
+        type: "string"
+  Refresh:
+    type: "object"
+    properties:
+      refresh_token:
+        type: "string"
+  Forget:
+    type: "object"
+    properties:
+      mobile:
+        type: "string"
+      password:
+        type: "string"
+      mobile_code:
+        type: "string"
+        description: "sms发送标识,发送接口返回"
+      verification_code:
+        type: "string"
+        description: "手机收到的短信码"
+  Password:
+    type: "object"
+    properties:
+      old_password:
+        type: "string"
+      new_password:
+        type: "string"
+  User:
+    type: "object"
+    properties:
+      username:
+        type: "string"
+      avatar:
+        type: "string"
+      nickname:
+        type: "string"
+      wechat:
+        type: "string"
+      type:
+        type: "integer"
+      token:
+        type: "string"
+      refresh_token:
+        type: "string"
+      expire_time:
+        type: "string"
+  UserInfo:
+    type: "object"
+    properties:
+      username:
+        type: "string"
+      avatar:
+        type: "string"
+      nickname:
+        type: "string"
+      wechat:
+        type: "string"
+      type:
+        type: "integer"
+  Robot:
+    type: "object"
+    properties:
+      code:
+        type: "string"
+        description: "机器人识别码"
+      status:
+        type: "integer"
+      alive_time:
+        type: "string"
+      version:
+        type: "string"
+      avatar:
+        type: "string"
+      nickname:
+        type: "string"
+      birthday:
+        type: "string"
+      gender:
+        type: "integer"
+  RobotInfo:
+    type: "object"
+    properties:
+      avatar:
+        type: "string"
+      nickname:
+        type: "string"
+      birthday:
+        type: "string"
+      gender:
+        type: "integer"
+  RobotNight:
+    type: "object"
+    properties:
+      is_open:
+        type: "boolean"
+        description: "是否开启夜间模式"
+      start_time:
+        type: "string"
+        description: "启动时间"
+      end_time:
+        type: "string"
+        description: "结束时间"
+  RobotNightInfo:
+    type: "object"
+    properties:
+      is_open:
+        type: "boolean"
+        description: "是否开启夜间模式"
+      start_time:
+        type: "string"
+        description: "启动时间"
+      end_time:
+        type: "string"
+        description: "结束时间"
+  RobotAntiAddiction:
+    type: "object"
+    properties:
+      is_open:
+        type: "boolean"
+        description: "是否开启防沉迷"
+      duration:
+        type: "integer"
+        description: "时间周期"
+  RobotAntiAddictionInfo:
+    type: "object"
+    properties:
+      is_open:
+        type: "boolean"
+        description: "是否开启防沉迷"
+      duration:
+        type: "integer"
+        description: "时间周期"
+  Chat:
+    type: "object"
+    properties:
+      user_id:
+        type: "integer"
+      type:
+        type: "initeger"
+        description: "消息类型：1文字，2表情，3语音"
+      content:
+        type: "string"
+        description: "消息内容"
+      direction:
+        type: "integer"
+        description: "聊天方向：1，机器人，2用户"
+  Message:
+    type: "object"
+    properties:
+      title:
+        type: "string"
+        description: "消息标题"
+      content:
+        type: "string"
+        description: "消息内容"
+      is_read:
+        type: "boolean"
+        description: "是否已读"
+  Banner:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      image:
+        type: "string"
+      status:
+        type: "integer"
+      type:
+        type: "integer"
+        description: "1:H5, 2:关联列表"
+  BannerDetail:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      image:
+        type: "string"
+      status:
+        type: "integer"
+      type:
+        type: "integer"
+        description: "1:H5, 2:绘本列表，3:磨耳朵列表"
+      list:
+        type: "array"
+        items:
+          $ref: "#/definitions/BannerRelation"
+  BannerRelation:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      banner_id:
+        type: "integer"
+      module:
+        type: "string"
+      module_id:
+        type: "integer"
+      order:
+        type: "integer"
+  SoundAlbum:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      cover:
+        type: "string"
+      author:
+        type: "string"
+  SoundCategory:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      order:
+        type: "integer"
+  SoundAlbumDetail:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      cover:
+        type: "string"
+      author:
+        type: "string"
+      list:
+        type: "array"
+        items:
+          $ref: "#/definitions/SoundVoice"
+  SoundVoice:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      duration:
+        type: "integer"
+        description: "时长，单位秒"
+      attach:
+        type: "string"
+        description: "附件：音频地址"
+  BookAlbum:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      cover:
+        type: "string"
+      author:
+        type: "string"
+      number:
+        type: "string"
+        description: "书号"
+      buy_link:
+        type: "string"
+        description: "购买链接"
+  BookCategory:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      order:
+        type: "integer"
+  BookAlbumDetail:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      cover:
+        type: "string"
+      author:
+        type: "string"
+      number:
+        type: "string"
+        description: "书号"
+      buy_link:
+        type: "string"
+        description: "购买链接"
+      list:
+        type: "array"
+        items:
+          $ref: "#/definitions/BookContent"
+  BookContent:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      duration:
+        type: "integer"
+        description: "时长，单位秒"
+      attach:
+        type: "string"
+        description: "附件：音频地址"
+      image:
+        type: "string"
+      page:
+        type: "integer"
+        description: "页数"
+  FeedbackInfo:
+    type: "object"
+    properties:
+      content:
+        type: "string"
+  Guide:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      title:
+        type: "string"
+      content:
+        type: "string"
+      order:
+        type: "integer"
+  VersionApp:
+    type: "object"
+    properties:
+      version:
+        type: "string"
+      apk_link:
+        type: "string"
+      content:
+        type: "string"
+  VersionRobot:
+    type: "object"
+    properties:
+      version:
+        type: "string"
+      apk_link:
+        type: "string"
+      content:
+        type: "string"
+  StatTop:
+    type: "object"
+    properties:
+      module:
+        type: "string"
+      module_id:
+        type: "integer"
+      count:
+        type: "integer"
+        description: "次数"
+      duration:
+        type: "integer"
+        description: "时长"
+  StatWeek:
+    type: "object"
+    properties:
+      count:
+        type: "integer"
+        description: "次数"
+      duration:
+        type: "integer"
+        description: "时长"
+  StatAggregation:
+    type: "object"
+    properties:
+      module:
+        type: "string"
+        description: "模块"
+      number:
+        type: "integer"
+        description: "id数"
+      count:
+        type: "integer"
+        description: "次数"
+      duration:
+        type: "integer"
+        description: "时长"
+      percent:
+        type: "integer"
+        description: "百分比：平均数"
+  SmsResponse:
+    type: "object"
+    properties:
+      code:
+        type: "string"
+        description: "短信code标识，在验证接口中回传"
+  SecurityOSS:
+    type: "object"
+    properties:
+      AccessKeyId:
+        type: "string"
+      AccessKeySecret:
+        type: "string"
+      SecurityToken:
+        type: "string"
+      Expiration:
+        type: "string"
+  IdResponse:
+    type: "object"
+    properties:
+      status:
+        type: "integer"
+      result:
+        type: "object"
+        properties:
+          id:
+            type: "integer"
+            description: "id"
+  ApiResponse:
+    type: "object"
+    properties:
+      status:
+        type: "integer"
+      message:
+        type: "string"

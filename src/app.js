@@ -1,5 +1,5 @@
 const routes = require('./routes');
-const messages = require('./message');
+const messages = require('./messages');
 const middlewares = require('koa-middlewares');
 // const path = require('path');
 // const fs = require('fs');
@@ -61,6 +61,7 @@ const ws = message.koa(app);
 messages.forEach((m) => {
   ws.use(m.events());
 });
+messages.mqttListen();
 /**
  * server listen
  */

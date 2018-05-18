@@ -1,6 +1,0 @@
-{
-  "apps": [{
-    "script": "agent.js",
-    "instances": "1"
-  }]
-}
