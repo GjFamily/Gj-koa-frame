@@ -589,21 +589,16 @@ Model.prototype.findByKey = function (key) {
   const where = [
     [primary, '=', key],
   ];
-  return this.find(where, [0, 1]).then((result) => {
+  return this.find({ where, limit: [0, 1] }).then((result) => {
     return result ? (result[0] || null) : null;
   });
 };
-Model.prototype.find = function (where, limit, order) {
+Model.prototype.find = function (query) {
   const field = this.schema.getSoftDelete();
-  where = where || [];
+  query.where = query.where || [];
   if (field) {
-    where.push([field, 'is', null]);
+    query.where.push([field, 'is', null]);
   }
-  const query = {
-    where,
-    limit,
-    order,
-  };
   return this.findByQuery(query);
 };
 Model.prototype.findByQuery = function (query) {
@@ -620,7 +615,7 @@ Model.prototype.findByQuery = function (query) {
 };
 Model.prototype.one = function (query) {
   query.limit = 1;
-  return this.findByQuery(query).then((result) => {
+  return this.find(query).then((result) => {
     return result ? (result[0] || null) : null;
   });
 };
@@ -640,7 +635,7 @@ Model.prototype.findListAndCount = function (where, page, number, order) {
   return this.count(where)
     .then((count) => {
       if (count > 0) {
-        return this.find(where, [page ? (page - 1) * number : 0, number], order)
+        return this.find({ where, limit: [page ? (page - 1) * number : 0, number], order })
           .then((list) => {
             return {
               count,

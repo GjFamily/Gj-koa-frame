@@ -32,7 +32,7 @@ export function get(id) {
  * @returns {*}
  */
 export function getIds(ids) {
-  return model.findByQuery({
+  return model.find({
     where: [
       ['id', 'in', ids],
     ],
