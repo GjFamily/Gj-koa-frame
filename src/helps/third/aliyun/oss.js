@@ -10,7 +10,7 @@ const client = new STS({
 
 export const BUCKETS = config.aliyun.oss_bucket;
 
-export function* generateToken(policy) {
+export function* generateToken(bucket, policy) {
   let result = yield client.assumeRole(config.aliyun.oss_role_arn, policy, config.aliyun.oss_expire_time);
   return {
     AccessKeyId: result.credentials.AccessKeyId,
@@ -18,13 +18,13 @@ export function* generateToken(policy) {
     SecurityToken: result.credentials.SecurityToken,
     Expiration: result.credentials.Expiration,
     Region: config.aliyun.oss_region,
-    Bucket: config.aliyun.oss_bucket.base_bucket,
+    Bucket: bucket,
   };
 }
 
 export function* uploadToken(bucket_name, path) {
   path = `/${path}/*` || '/*';
-  return yield generateToken({
+  return yield generateToken(bucket_name, {
     Statement: [{
       Action: [
         'oss:*',

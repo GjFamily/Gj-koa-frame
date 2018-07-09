@@ -13,25 +13,23 @@ const gt = new Getui(option);
 
 let auth = gt.authSign();
 
-function generateMessage(title, body, message) {
+function generateMessage(title, body, payload) {
   const alert = new Alert();
   alert.title = title;
   alert.body = body;
-  const payload = JSON.stringify({
-    message,
-  });
+  const payload_str = JSON.stringify(payload);
 
   const apnsInfo = new ApnsInfo();
   apnsInfo.alert = alert;
-  apnsInfo.customMsg = { payload };
+  apnsInfo.customMsg = { payload_str };
 
   const template = new TransmissionTemplate();
-  template.transmissionContent = payload;
+  template.transmissionContent = payload_str;
   return { template, apnsInfo };
 }
 
-export function sendSingle(cid, title, body, message) {
-  let { template, apnsInfo } = generateMessage(title, body, message);
+export function sendSingle(cid, title, body, payload) {
+  let { template, apnsInfo } = generateMessage(title, body, payload);
   const singleMessage = new SingleMessage();
   singleMessage.template = template;
   singleMessage.apnsInfo = apnsInfo;
@@ -41,12 +39,12 @@ export function sendSingle(cid, title, body, message) {
   };
 
   return auth.then(() => {
-    return gt.pushMessageToSingle(message, target);
+    return gt.pushMessageToSingle(singleMessage, target);
   });
 }
 
-export function sendAll(title, body, message) {
-  let { template, apnsInfo } = generateMessage(title, body, message);
+export function sendAll(title, body, payload) {
+  let { template, apnsInfo } = generateMessage(title, body, payload);
   const appMessage = new AppMessage();
   appMessage.template = template;
   appMessage.apnsInfo = apnsInfo;

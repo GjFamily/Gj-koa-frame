@@ -6,14 +6,13 @@ const parse = function (cb, opts) {
     const ctx = this;
     const req = ctx.request;
     let kwarg = {};
-    console.log(ctx.path);
     if (opts) {
       opts.forEach((value) => {
         if (value.body) { // json格式，或者text格式
           kwarg[value.name] = req.body[value.name];
         } else if (value.query) { // 请求
           const v = req.query[value.name];
-          kwarg[value.name] = value.array ? v.split(',') : v;
+          kwarg[value.name] = value.array ? (v ? v.split(',') : []) : v;
         } else if (value.path) { // 路径
           kwarg[value.name] = ctx.params[value.name];
         } else if (value.form) { // 表单提交

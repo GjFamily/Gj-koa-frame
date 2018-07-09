@@ -216,3 +216,11 @@ module.exports.formatData = function (fields, data) {
   }
   return _data;
 };
+
+module.exports.listToMap = function (list, field) {
+  let map = {};
+  list.forEach((row) => {
+    map[row[field]] = row;
+  });
+  return map;
+};

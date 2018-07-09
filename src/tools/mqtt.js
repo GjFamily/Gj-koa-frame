@@ -19,7 +19,8 @@ function connect(clientProxy) {
     console.log('Mqtt server connect success');
     for (let key in clientProxy.subscribeMap) {
       console.log(`Mqtt subscribe ${key}`);
-      client.subscribe(key);
+      let { qos } = clientProxy.subscribeMap[key];
+      client.subscribe(key, { qos });
     }
     clientProxy.connect = true;
   });
@@ -29,9 +30,10 @@ function connect(clientProxy) {
 
   client.on('message', (topic, message) => {
     // console.log('Mqtt server message', topic, message);
-    let callback = clientProxy.subscribeMap[topic];
+    let topic_info = clientProxy.subscribeMap[topic];
 
-    if (callback) {
+    if (topic_info) {
+      let { callback } = topic_info;
       Promise.resolve(message)
         .then((result) => {
           return callback(result);
@@ -42,14 +44,14 @@ function connect(clientProxy) {
   });
 }
 
-MqttClient.prototype.subscribe = function (topic, callback) {
+MqttClient.prototype.subscribe = function (topic, callback, qos = 0) {
   if (!this.init) {
     connect(this);
   } else if (this.connect) {
     console.log(`Mqtt subscribe ${topic}`);
-    this.client.subscribe(topic);
+    this.client.subscribe(topic, { qos });
   }
-  this.subscribeMap[topic] = callback;
+  this.subscribeMap[topic] = { callback, qos };
 };
 
 MqttClient.prototype.unsubscribe = function (topic) {

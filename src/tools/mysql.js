@@ -4,6 +4,7 @@
 const mysql = require('mysql');
 const config = require('../config');
 
+
 function Mysql(dbConfig) {
   this.connect = mysql.createPool(dbConfig);
 }

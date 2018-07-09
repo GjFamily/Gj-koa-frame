@@ -14,11 +14,11 @@ RedisInstance.prototype.getClient = function getClient() {
   return this.client;
 };
 commands.list.forEach((command) => {
-  RedisInstance.prototype[command] = () => {
+  RedisInstance.prototype[command] = function exec(...args) {
     const ctx = this;
     const arg = [];
-    for (let i = 0; i < arguments.length; i++) {
-      arg.push(arguments[i]);
+    for (let i = 0; i < args.length; i++) {
+      arg.push(args[i]);
     }
     if (config.debug) console.log(command, arg);
     return new Promise((resolve, reject) => {
