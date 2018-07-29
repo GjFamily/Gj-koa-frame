@@ -1,32 +1,56 @@
+import debug from 'debug';
+import { SystemException } from './exception';
+
+const debuger = debug('app:controller');
 /**
  * Created by gaojie on 17-2-18.
  */
 const parse = function (cb, opts) {
-  return function* () {
+  return function* ControllerMiddleware() {
     const ctx = this;
     const req = ctx.request;
     let kwarg = {};
     if (opts) {
-      opts.forEach((value) => {
-        if (value.body) { // json格式，或者text格式
-          kwarg[value.name] = req.body[value.name];
-        } else if (value.query) { // 请求
-          const v = req.query[value.name];
-          kwarg[value.name] = value.array ? (v ? v.split(',') : []) : v;
-        } else if (value.path) { // 路径
-          kwarg[value.name] = ctx.params[value.name];
-        } else if (value.form) { // 表单提交
-          kwarg[value.name] = (req.fields && req.fields[value.name]) || req.body[value.name];
-          if (value.array) kwarg[value.name] = kwarg[value.name] ? kwarg[value.name].split(',') : [];
-        } else if (value.cache) {
-          kwarg[value.name] = ctx.cache[value.cache === true ? value.name : value.cache];
-        } else if (value.all) {
-          kwarg[value.name] = req.body;
+      for (const key in opts) {
+        let param = opts[key];
+        let name = param.name || key;
+        switch (param.in) {
+          case 'body':
+            // json格式，或者text格式
+            kwarg[name] = req.body[name];
+            break;
+          case 'query':
+            // 请求
+            kwarg[name] = param.array ? (req.query[name] ? req.query[name].split(',') : []) : req.query[name];
+            break;
+          case 'path':
+            // 路径
+            kwarg[name] = ctx.params[name];
+            break;
+          case 'form':
+          case 'file':
+            // 表单提交
+            kwarg[name] = (req.fields && req.fields[name]) || req.body[name];
+            if (param.array) kwarg[param.name] = kwarg[name] ? kwarg[name].split(',') : [];
+            break;
+          case 'cache':
+            kwarg[name] = ctx.cache[param.cache === true || !param.cache ? name : param.cache];
+            break;
+          case 'header':
+            break;
+          case 'cookie':
+            break;
+          case 'all':
+            kwarg[name] = req.body;
+            break;
+          default:
+            continue;
         }
-        if (value.default && !kwarg[value.name]) {
-          kwarg[value.name] = value.default;
+        if (param.default && !kwarg[name]) {
+          kwarg[name] = param.default;
         }
-      });
+        debuger(kwarg);
+      }
     }
     try {
       if (!(cb instanceof Array)) cb = [cb];
@@ -42,18 +66,85 @@ const parse = function (cb, opts) {
       // 多个路由验证问题，需要规范扩展
       // yield next;
     } catch (err) {
-      if (err.log || !err.no) {
+      let e = err;
+      if (!e.no) {
+        e = SystemException(e, err.stack);
         if (ctx.log) {
           ctx.log.error(err);
         } else {
-          console.log(err);
+          debuger(err);
+        }
+      } else if (e.log) {
+        if (ctx.log) {
+          ctx.log.error(e);
+        } else {
+          debuger(e);
         }
       }
       ctx.body = {
-        status: 500,
-        message: err.message,
+        status: e.no ? e.no : 500,
+        message: e.message,
+        result: e.info,
       };
     }
   };
 };
 module.exports = parse;
+module.exports.response = function (result, type) {
+  return {
+    status: {
+      type: 'int',
+      required: true,
+      description: '状态',
+    },
+    result: {
+      type: type || Object,
+      required: true,
+      schema: result,
+    },
+  };
+};
+module.exports.ExceptionResponse = {
+  schema: {
+    status: {
+      type: 'int',
+      required: true,
+      description: '状态',
+    },
+    message: {
+      type: String,
+      required: true,
+      description: '错误信息',
+    },
+  },
+};
+module.exports.IdResponse = {
+  schema: {
+    status: {
+      type: 'int',
+      required: true,
+      description: '状态',
+    },
+    result: {
+      type: Object,
+      required: true,
+      object: {
+        id: {
+          type: 'int',
+          required: true,
+        },
+      },
+    },
+  },
+  alias: 'IdResponse',
+};
+module.exports.ApiResponse = {
+  schema: {
+    status: {
+      type: 'int',
+      required: true,
+      description: '状态',
+    },
+  },
+  alias: 'ApiResponse',
+};

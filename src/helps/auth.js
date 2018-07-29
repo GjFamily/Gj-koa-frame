@@ -9,50 +9,19 @@ const config = require('../config');
 // const uid = require('uid-safe');
 const jwt = require('jsonwebtoken');
 
-
-const filterPath = function (ctx, exclude) {
-  for (const index in exclude) {
-    if (ctx.path.indexOf(exclude[index]) > 0) return true;
-  }
-  return false;
-};
-
-const defaultFail = function (ctx) {
-  ctx.body = '401 Unauthorized';
-  ctx.status = 401;
-};
-
 const auth = function (opts) {
   opts = opts || {};
-  opts.noLogin = opts.noLogin || defaultFail;
-  opts.noAuth = opts.noAuth || defaultFail;
   opts.role = opts.role || null;
   opts.role_key = opts.role_key || `${opts.role}_id`;
-  opts.exclude = opts.exclude || [];
   opts.id = opts.id || 'id';
   return {
     // 验证当前访问授权状态
     * session(next) {
       // 设置默认的缓存器，如果安装session，则存储在session中
       this.cache = this.session || {};
-      const filter = filterPath(this, opts.exclude);
-      const auth_result = opts.auth && !(yield opts.auth(this));
-      if (!filter) {
-        if (!this.cache[opts.id]) return yield opts.noLogin(this);
-        if (auth_result) return yield opts.noAuth(this);
-      }
 
       if (this.cache[opts.id]) {
         this.cache.time = Date.now();
-      }
-      yield next;
-      return null;
-    },
-    * token(next) {
-      const filter = filterPath(this, opts.exclude);
-      const auth_result = opts.auth && !(yield opts.auth(this));
-      if (!filter) {
-        if (auth_result) return yield opts.noAuth(this);
       }
       yield next;
       return null;
@@ -91,11 +60,6 @@ const auth = function (opts) {
       this.cache.role = null;
       return {};
     },
-    // 设定无需权限路由
-    access(route) {
-      opts.exclude.push(route);
-      return route;
-    },
     // 生成授权token,符合jwt规范
     jwt({ expire = 60 }) {
       const payload = {};
@@ -119,6 +83,18 @@ const auth = function (opts) {
 };
 
 module.exports = auth;
+module.exports.middleware = function (auth_list, fail) {
+  return function* AuthMiddleware(next) {
+    let flag = false;
+    for (const key in auth_list) {
+      const result = yield auth_list[key](this);
+      if (result) flag = result;
+    }
+    if (!flag && auth_list.length > 0) return yield fail(this);
+    yield next;
+    return null;
+  };
+};
 module.exports.roles = {
   USER: 'user', // 账号
 };

@@ -61,7 +61,6 @@ const ws = message.koa(app);
 messages.forEach((m) => {
   ws.use(m.events());
 });
-messages.mqttListen();
 /**
  * server listen
  */

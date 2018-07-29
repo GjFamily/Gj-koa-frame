@@ -1,6 +1,9 @@
 
+import debug from 'debug';
 import mqtt from 'mqtt';
 import config from '../config';
+
+const debuger = debug('app:mqtt');
 
 const MqttClient = function instance(options) {
   this.options = options;
@@ -8,6 +11,7 @@ const MqttClient = function instance(options) {
   this.init = false;
   this.client = null;
   this.subscribeMap = {};
+  this.publishList = [];
 };
 
 function connect(clientProxy) {
@@ -16,20 +20,26 @@ function connect(clientProxy) {
   let { client } = clientProxy;
   clientProxy.init = true;
   client.on('connect', () => {
-    console.log('Mqtt server connect success');
+    debuger('Mqtt server connect success');
     for (let key in clientProxy.subscribeMap) {
-      console.log(`Mqtt subscribe ${key}`);
+      debuger(`Mqtt subscribe ${key}`);
       let { qos } = clientProxy.subscribeMap[key];
       client.subscribe(key, { qos });
     }
+    clientProxy.publishList.forEach((row) => {
+      client.publish(...row);
+    });
     clientProxy.connect = true;
   });
   client.on('reconnect', () => {
-    console.log('Mqtt server reconnect');
+    debuger('Mqtt server reconnect');
+  });
+  client.on('disconnect', () => {
+    debuger('Mqtt server disconnect');
   });
 
   client.on('message', (topic, message) => {
-    // console.log('Mqtt server message', topic, message);
+    // debuger('Mqtt server message', topic, message);
     let topic_info = clientProxy.subscribeMap[topic];
 
     if (topic_info) {
@@ -38,7 +48,7 @@ function connect(clientProxy) {
         .then((result) => {
           return callback(result);
         }).catch((err) => {
-          console.log(err);
+          mqtt(err);
         });
     }
   });
@@ -48,7 +58,7 @@ MqttClient.prototype.subscribe = function (topic, callback, qos = 0) {
   if (!this.init) {
     connect(this);
   } else if (this.connect) {
-    console.log(`Mqtt subscribe ${topic}`);
+    debuger(`Mqtt subscribe ${topic}`);
     this.client.subscribe(topic, { qos });
   }
   this.subscribeMap[topic] = { callback, qos };
@@ -62,9 +72,17 @@ MqttClient.prototype.unsubscribe = function (topic) {
 
 MqttClient.prototype.publish = function (...args) {
   if (!this.init) {
+    this.publishList.push(args);
     connect(this);
+  } else {
+    this.client.publish(...args);
   }
-  this.client.publish(...args);
+};
+
+MqttClient.prototype.close = function () {
+  if (this.init) {
+    this.client.end();
+  }
 };
 
 export default new MqttClient(config.mqtt);

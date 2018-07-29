@@ -3,6 +3,7 @@
  */
 const SMSClient = require('@alicloud/sms-sdk');
 const config = require('../../../config');
+import { SystemException, ValidException } from './exception';
 
 // ACCESS_KEY_ID/ACCESS_KEY_SECRET 根据实际申请的账号信息进行替换
 const accessKeyId = config.aliyun.access_key;
@@ -30,7 +31,7 @@ export function send(mobile, template, params) {
   return smsClient.sendSMS({
     PhoneNumbers: mobile,
     SignName,
-    TemplateCode: template,
+    TemplateCode: item.template,
     TemplateParam: JSON.stringify(params_mapping),
   }).then((res) => {
     let { Code } = res;
@@ -39,10 +40,12 @@ export function send(mobile, template, params) {
       // 处理返回参数
       return Promise.resolve();
     } else {
-      throw new Error(`sms fail: ${Code}`);
+      throw new Error(Code);
     }
   }, (err) => {
-    console.log(err);
-    throw new Error(`sms fail:${err}`);
+    if (err.code && err.code === 'isv.MOBILE_NUMBER_ILLEGAL') {
+      throw ValidException('请输入有效/正确的手机号');
+    }
+    throw SystemException('短信发送失败');
   });
 }

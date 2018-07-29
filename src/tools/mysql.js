@@ -1,6 +1,7 @@
 /**
  * Created by gaojie on 2017/3/15.
  */
+const debug = require('debug')('app:debug');
 const mysql = require('mysql');
 const config = require('../config');
 
@@ -17,7 +18,7 @@ Mysql.prototype.escape = function escape(string) {
 Mysql.prototype.promise = function promise(sql, connect) {
   const self = this;
   const instance = connect || self.instance();
-  if (config.debug) console.log(sql);
+  debug(sql);
   return new Promise((resolve, reject) => {
     instance.query(sql, (err, result, fields) => {
       if (err) reject(err);
@@ -40,7 +41,7 @@ Mysql.prototype.transactions = function transactions(cb) {
         instance.beginTransaction((e) => {
           if (e) {
             reject(e);
-          } else if (config.debug) console.log('mysql start transaction');
+          } else if (config.debug) debug('mysql start transaction');
           return resolve(connect);
         });
       }
@@ -48,7 +49,7 @@ Mysql.prototype.transactions = function transactions(cb) {
   }).then(cb).then((result) => {
     return new Promise((resolve, reject) => {
       instance.commit((err) => {
-        if (config.debug) console.log('mysql commit');
+        debug('mysql commit');
         if (err) {
           reject(err);
         } else {
@@ -59,7 +60,7 @@ Mysql.prototype.transactions = function transactions(cb) {
     });
   }).catch((err) => {
     instance.rollback(() => {
-      if (config.debug) console.log('mysql rollback');
+      debug('mysql rollback');
       self.instance().releaseConnection(instance);
     });
     throw err;
@@ -75,7 +76,7 @@ Mysql.prototype.transaction = function transaction() {
       } else {
         connect.beginTransaction((e) => {
           if (e) return reject(e);
-          if (config.debug) console.log('mysql start transaction');
+          debug('mysql start transaction');
           return resolve(connect);
         });
       }
@@ -86,7 +87,7 @@ Mysql.prototype.commit = function commit(connect) {
   const self = this;
   return new Promise((resolve, reject) => {
     connect.commit((err) => {
-      if (config.debug) console.log('mysql commit');
+      if (config.debug) debug('mysql commit');
       if (err) {
         reject(err);
       } else {
@@ -100,7 +101,7 @@ Mysql.prototype.rollback = function rollback(connect) {
   const self = this;
   return new Promise((resolve, reject) => {
     connect.rollback((err) => {
-      if (config.debug) console.log('mysql rollback');
+      if (config.debug) debug('mysql rollback');
       if (err) {
         reject(err);
       } else {

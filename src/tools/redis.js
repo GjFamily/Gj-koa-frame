@@ -1,6 +1,7 @@
 /**
  * Created by gaojie on 17-2-17.
  */
+const debug = require('debug')('app:redis');
 const redis = require('redis');
 const commands = require('redis-commands');
 const config = require('../config');
@@ -20,7 +21,7 @@ commands.list.forEach((command) => {
     for (let i = 0; i < args.length; i++) {
       arg.push(args[i]);
     }
-    if (config.debug) console.log(command, arg);
+    debug(command, arg);
     return new Promise((resolve, reject) => {
       arg.push((err, result) => {
         if (err) {

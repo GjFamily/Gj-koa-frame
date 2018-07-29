@@ -1,11 +1,13 @@
 /**
  * Created by gaojun on 17-2-18.
  */
+const debug = require('debug')('app:debug');
 const request = require('request');
 const config = require('../config');
 
 function send(options) {
   return new Promise((resolve, reject) => {
+    debug(`request: ${options}`);
     request(options, (error, response) => {
       if (!error) {
         resolve({ body: response.body, res: response });

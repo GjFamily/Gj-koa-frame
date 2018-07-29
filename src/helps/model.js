@@ -1,6 +1,7 @@
 /**
  * Created by gaojie on 2017/3/15.
  */
+const debug = require('debug')('app:model');
 const util = require('util');
 const events = require('events');
 const co = require('co');
@@ -478,6 +479,7 @@ function Model(name, schema) {
   this.query = new Query(this);
   this.Record = new Record(this);
   events.EventEmitter.call(this);
+  debug(`register model:${name}`);
 }
 util.inherits(Model, events.EventEmitter);
 Model.prototype.setQuery = function (query) {

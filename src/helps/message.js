@@ -1,3 +1,4 @@
+const debug = require('debug')('app:message');
 const http = require('http');
 const io = require('socket.io');
 const co = require('co');
@@ -53,13 +54,13 @@ Message.prototype.events = function () {
       });
     }
     self.ns.on('connect', (socket) => {
-      if (config.debug) console.log(` ++++ ${self.name} connect:${JSON.stringify(socket.handshake.query)} ++++`);
+      debug(` ++++ ${self.name} connect:${JSON.stringify(socket.handshake.query)} ++++`);
       if (self.opts.connect) {
         co(self.opts.connect.call(socket, socket.handshake.query))
           .then(() => {
-            if (config.debug) console.log(` ++++ ${self.name} new connect ++++`);
+            debug(` ++++ ${self.name} new connect ++++`);
           }).catch((err) => {
-            if (config.debug) console.log(` +++- ${self.name} connect error:${err} -+++`);
+            debug(` +++- ${self.name} connect error:${err} -+++`);
             socket.disconnect();
           });
       }
@@ -74,13 +75,13 @@ Message.prototype.events = function () {
           if (typeof args[args.length - 1] === 'function') {
             ack = args.pop();
           }
-          if (config.debug) console.log(` <=  ${self.name}:${event} : ${JSON.stringify(args)}  ack: ${(ack ? 'true' : false)}`);
+          debug(` <=  ${self.name}:${event} : ${JSON.stringify(args)}  ack: ${(ack ? 'true' : false)}`);
           co(fn.apply(socket, args))
             .then((result) => {
               if (ack) {
                 ack(result);
               }
-              if (config.debug) console.log(`  => ${JSON.stringify(result)} ack:${(ack ? 'true' : false)}`);
+              debug(`  => ${JSON.stringify(result)} ack:${(ack ? 'true' : false)}`);
             }).catch((err) => {
               if (ack) {
                 ack({
@@ -89,7 +90,7 @@ Message.prototype.events = function () {
                 });
               }
               if (config.debug) {
-                console.log(`  => error:${err}`);
+                debug(`  => error:${err}`);
               }
             });
         });

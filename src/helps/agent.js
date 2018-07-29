@@ -1,3 +1,4 @@
+const debug = require('debug')('app:agent');
 const co = require('co');
 const ms = require('humanize-ms');
 const parser = require('cron-parser');
@@ -42,12 +43,16 @@ const Agent = function () {
 };
 
 Agent.prototype.loop = function (fn, wait) {
+  this.task_num++;
+  debug(`register loop: tasks(${this.task_num})`);
   const h = function () {
+    debug('exec loop');
     co(fn)
       .catch((err) => {
-        console.log(err);
+        debug(err);
       }).then(() => getResult(wait))
       .then((timeout) => {
+        debug(`loop wait:${timeout}`);
         if (timeout === 0) setImmediate(h);
         else safeTimeout(h, timeout);
       });
@@ -57,28 +62,32 @@ Agent.prototype.loop = function (fn, wait) {
 };
 
 Agent.prototype.cron = function (fn, cron) {
+  this.task_num++;
   getResult(cron).then((result) => {
+    debug(`register cron:${result} tasks(${this.task_num})`);
     const interval = parser.parseExpression(result);
     startCron(interval, () => {
+      debug(`exec cron:${result}`);
       co(fn)
         .catch((err) => {
-          console.log(err);
+          debug(err);
         });
     });
   });
-  this.task_num++;
 };
 
 Agent.prototype.interval = function (fn, interval) {
+  this.task_num++;
   getResult(interval).then((result) => {
+    debug(`register interval:${result} tasks(${this.task_num})`);
     interval = ms(result);
     safeInterval(() => {
+      debug(`exec interval:${result}`);
       co(fn).catch((err) => {
-        console.log(err);
+        debug(err);
       });
     }, interval);
   });
-  this.task_num++;
 };
 
 
