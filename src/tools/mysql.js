@@ -5,7 +5,6 @@ const debug = require('debug')('app:debug');
 const mysql = require('mysql');
 const config = require('../config');
 
-
 function Mysql(dbConfig) {
   this.connect = mysql.createPool(dbConfig);
 }
@@ -22,9 +21,7 @@ Mysql.prototype.promise = function promise(sql, connect) {
   return new Promise((resolve, reject) => {
     instance.query(sql, (err, result, fields) => {
       if (err) reject(err);
-      else {
-        resolve(result, fields);
-      }
+      resolve(result, fields);
     });
   });
 };
@@ -33,34 +30,26 @@ Mysql.prototype.transactions = function transactions(cb) {
   let instance = null;
   return new Promise((resolve, reject) => {
     self.instance().getConnection((err, connect) => {
-      if (err) {
-        // console.log('reject');
-        reject(err);
-      } else {
-        instance = connect;
-        instance.beginTransaction((e) => {
-          if (e) {
-            reject(e);
-          } else if (config.debug) debug('mysql start transaction');
-          return resolve(connect);
-        });
-      }
+      if (err) return reject(err);
+      instance = connect;
+      return instance.beginTransaction((e) => {
+        if (e) return reject(e);
+        if (config.debug) debug('mysql start transaction');
+        return resolve(connect);
+      });
     });
   }).then(cb).then((result) => {
     return new Promise((resolve, reject) => {
       instance.commit((err) => {
-        debug('mysql commit');
-        if (err) {
-          reject(err);
-        } else {
-          self.instance().releaseConnection(instance);
-          resolve(result);
-        }
+        if (err) return reject(err);
+        if (config.debug) debug('mysql commit');
+        self.instance().releaseConnection(instance);
+        return resolve(result);
       });
     });
   }).catch((err) => {
     instance.rollback(() => {
-      debug('mysql rollback');
+      if (config.debug) debug('mysql rollback');
       self.instance().releaseConnection(instance);
     });
     throw err;
@@ -71,15 +60,12 @@ Mysql.prototype.transaction = function transaction() {
   const self = this;
   return new Promise((resolve, reject) => {
     self.instance().getConnection((err, connect) => {
-      if (err) {
-        reject(err);
-      } else {
-        connect.beginTransaction((e) => {
-          if (e) return reject(e);
-          debug('mysql start transaction');
-          return resolve(connect);
-        });
-      }
+      if (err) return reject(err);
+      return connect.beginTransaction((e) => {
+        if (e) return reject(e);
+        if (config.debug) debug('mysql start transaction');
+        return resolve(connect);
+      });
     });
   });
 };
@@ -88,12 +74,9 @@ Mysql.prototype.commit = function commit(connect) {
   return new Promise((resolve, reject) => {
     connect.commit((err) => {
       if (config.debug) debug('mysql commit');
-      if (err) {
-        reject(err);
-      } else {
-        self.instance().releaseConnection(connect);
-        resolve();
-      }
+      if (err) return reject(err);
+      self.instance().releaseConnection(connect);
+      return resolve();
     });
   });
 };
@@ -102,12 +85,9 @@ Mysql.prototype.rollback = function rollback(connect) {
   return new Promise((resolve, reject) => {
     connect.rollback((err) => {
       if (config.debug) debug('mysql rollback');
-      if (err) {
-        reject(err);
-      } else {
-        self.instance().releaseConnection(connect);
-        resolve();
-      }
+      if (err) return reject(err);
+      self.instance().releaseConnection(connect);
+      return resolve();
     });
   });
 };

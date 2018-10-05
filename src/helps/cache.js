@@ -1,7 +1,7 @@
 /**
  * Created by gaojie on 2017/4/10.
  */
-const debug = require('debug')('app:cache');
+// const debug = require('debug')('app:cache');
 const redis = require('../tools/redis');
 const co = require('co');
 const tools = require('../helps/tools');
@@ -20,28 +20,28 @@ const urlFormat = function urlFormat(url) {
 
 const Cache = function cache(instance) {
   return {
-    set(url, result, expire) {
+    set(url, result, expire, ctx) {
       url = urlFormat(url);
       result = JSON.stringify(result);
-      debug(`set cache:${url}`);
+      if (ctx) ctx.cache.append(`set cache:${url}`);
       return instance.setex(url, expire, result);
     },
-    get(url) {
+    get(url, ctx) {
       url = urlFormat(url);
-      debug(`get cache:${url}`);
+      if (ctx) ctx.cache.append(`get cache:${url}`);
       return instance.get(url)
         .then((result) => {
           if (!result) return null;
           return JSON.parse(result);
         });
     },
-    clear(url) {
+    clear(url, ctx) {
       url = urlFormat(url);
-      debug(`clear cache:${url}`);
+      if (ctx) ctx.cache.append(`clear cache:${url}`);
       return instance.del(url);
     },
-    batchClean(pattern) {
-      debug(`batch clean cache:${pattern}`);
+    batchClean(pattern, ctx) {
+      if (ctx) ctx.cache.append(`batch clean cache:${pattern}`);
       return instance.keys(pattern.map(url => urlFormat(url)))
         .then((result) => {
           if (result.length > 0) {
@@ -51,9 +51,9 @@ const Cache = function cache(instance) {
           }
         });
     },
-    getClean(url, s = true) {
+    getClean(url, s = true, ctx) {
       url = urlFormat(url);
-      debug(`get clean cache:${url}`);
+      if (ctx) ctx.cache.append(`get clean cache:${url}`);
       return instance.multi([
         ['get', url],
         ['del', url],
@@ -61,15 +61,15 @@ const Cache = function cache(instance) {
         return s ? JSON.parse(replies[0]) : replies[0];
       });
     },
-    cache(url, callback, expire) {
+    cache(url, callback, expire, ctx) {
       url = urlFormat(url);
       return instance.get(url)
         .then((result) => {
-          debug(`get cache:${url}(${result})`);
+          if (ctx) ctx.cache.append(`get cache:${url}(${result})`);
           if (!result) {
             result = Promise.resolve(co(callback()))
               .then((r) => {
-                debug(`set cache:${url}(${r})`);
+                if (ctx) ctx.cache.append(`set cache:${url}(${r})`);
                 if (r !== false) {
                   return instance.setex(url, expire, JSON.stringify(r))
                     .then(() => {
@@ -85,9 +85,9 @@ const Cache = function cache(instance) {
           return result;
         });
     },
-    getIncr(url, fn, expire) {
+    getIncr(url, fn, expire, ctx) {
       url = urlFormat(url);
-      debug(`incr cache:${url}`);
+      if (ctx) ctx.cache.append(`incr cache:${url}`);
       return instance.multi([
         ['INCR', url, fn],
         ['EXPIRE', url, expire],
@@ -95,9 +95,9 @@ const Cache = function cache(instance) {
         return replies[0];
       });
     },
-    count(url, expire) {
+    count(url, expire, ctx) {
       url = urlFormat(url);
-      debug(`count cache:${url}`);
+      if (ctx) ctx.cache.append(`count cache:${url}`);
       return instance.multi([
         ['INCR', url],
         ['EXPIRE', url, expire],

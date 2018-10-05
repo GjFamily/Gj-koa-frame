@@ -1,9 +1,6 @@
 
-import debug from 'debug';
 import mqtt from 'mqtt';
 import config from '../config';
-
-const debuger = debug('app:mqtt');
 
 const MqttClient = function instance(options) {
   this.options = options;
@@ -20,9 +17,9 @@ function connect(clientProxy) {
   let { client } = clientProxy;
   clientProxy.init = true;
   client.on('connect', () => {
-    debuger('Mqtt server connect success');
+    console.log('Mqtt server connect success');
     for (let key in clientProxy.subscribeMap) {
-      debuger(`Mqtt subscribe ${key}`);
+      console.log(`Mqtt subscribe ${key}`);
       let { qos } = clientProxy.subscribeMap[key];
       client.subscribe(key, { qos });
     }
@@ -32,14 +29,14 @@ function connect(clientProxy) {
     clientProxy.connect = true;
   });
   client.on('reconnect', () => {
-    debuger('Mqtt server reconnect');
+    console.log('Mqtt server reconnect');
   });
   client.on('disconnect', () => {
-    debuger('Mqtt server disconnect');
+    console.log('Mqtt server disconnect');
   });
 
   client.on('message', (topic, message) => {
-    // debuger('Mqtt server message', topic, message);
+    // console.log('Mqtt server message', topic, message);
     let topic_info = clientProxy.subscribeMap[topic];
 
     if (topic_info) {
@@ -48,7 +45,7 @@ function connect(clientProxy) {
         .then((result) => {
           return callback(result);
         }).catch((err) => {
-          mqtt(err);
+          console.log(err);
         });
     }
   });
@@ -58,7 +55,7 @@ MqttClient.prototype.subscribe = function (topic, callback, qos = 0) {
   if (!this.init) {
     connect(this);
   } else if (this.connect) {
-    debuger(`Mqtt subscribe ${topic}`);
+    console.log(`Mqtt subscribe ${topic}`);
     this.client.subscribe(topic, { qos });
   }
   this.subscribeMap[topic] = { callback, qos };

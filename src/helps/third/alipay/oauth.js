@@ -1,5 +1,5 @@
 /* eslint-disable */
-const GENDER = require('./').GENDER;
+const GENDER = require('../').GENDER;
 /**
  * 获取用户信息：在支付宝内部
  * @param code

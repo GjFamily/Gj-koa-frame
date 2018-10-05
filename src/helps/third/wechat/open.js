@@ -1,5 +1,8 @@
 /* eslint-disable */
-const GENDER = require('./').GENDER;
+const GENDER = require('../').GENDER;
+module.exports.getOAuthUrl = function (url) {
+  return `https://open.weixin.qq.com/connect/qrconnect?appid=${this.app_id}&redirect_uri=${encodeURIComponent(url)}&response_type=code&scope=snsapi_login&state=STATE#wechat_redirect`;
+}
 /**
  * 获取用户信息：在微信内部
  * @param code
@@ -60,7 +63,7 @@ function* getWebAccessToken(client, code) {
   let data = {
     grant_type: 'authorization_code',
     appid: client.app_id,
-    secret: client.app_key,
+    secret: client.app_secret,
     code: code
   };
   return yield client.request('/sns/oauth2/access_token', data);

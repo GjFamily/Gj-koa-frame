@@ -1,9 +1,0 @@
-urls: 
-  - url: "/app.yaml"
-    name: "App Api"
-  - url: "/admin.yaml"
-    name: "Admin Api"
-  - url: "/robot.yaml"
-    name: "Robot Api"
-dom_id: "#swagger-ui"
-validatorUrl: "https://online.swagger.io/validator"

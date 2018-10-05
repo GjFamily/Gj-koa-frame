@@ -1,9 +1,10 @@
 /**
  * Created by gaojun on 17-3-9.
  */
-const SMSClient = require('@alicloud/sms-sdk');
-const config = require('../../../config');
-import { SystemException, ValidException } from './exception';
+import SMSClient from '@alicloud/sms-sdk';
+import config from '../../../config';
+
+import { SystemException, ValidException } from '../../exception';
 
 // ACCESS_KEY_ID/ACCESS_KEY_SECRET 根据实际申请的账号信息进行替换
 const accessKeyId = config.aliyun.access_key;

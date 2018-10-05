@@ -206,11 +206,48 @@ module.exports.rmdirSync = function (dirname) {
   }
 };
 
+module.exports.writeFile = function (file_path, buffer, over = false) {
+  if (fs.existsSync(file_path)) {
+    if (over) {
+      // 更新
+      exports.unlinkSync(file_path);
+    } else {
+      throw new Error('文件存在');
+    }
+  }
+  if (!exports.mkdirSync(path.dirname(file_path))) {
+    throw new Error('目录创建失败');
+  }
+  fs.writeFileSync(file_path, buffer);
+  if (!fs.existsSync(file_path)) {
+    throw new Error('上传失败');
+  }
+};
+
+module.exports.saveFile = function (file_path, file, over = false) {
+  if (fs.existsSync(file_path)) {
+    if (over) {
+      // 更新
+      exports.unlinkSync(file_path);
+    } else {
+      throw new Error('文件存在');
+    }
+  }
+  if (!exports.mkdirSync(path.dirname(file_path))) {
+    throw new Error('目录创建失败');
+  }
+  let buffer = fs.readFileSync(file);
+  fs.writeFileSync(file_path, buffer);
+  if (!fs.existsSync(file_path)) {
+    throw new Error('上传失败');
+  }
+};
+
 module.exports.formatData = function (fields, data) {
   let _data = {};
   for (let i in fields) {
     let field = fields[i];
-    if (data[field] || data[field] === 0) {
+    if (data[field] || data[field] === 0 || data[field] === '' || data[field] === null) {
       _data[field] = data[field];
     }
   }
@@ -223,4 +260,32 @@ module.exports.listToMap = function (list, field) {
     map[row[field]] = row;
   });
   return map;
+};
+
+module.exports.formatSeconds = function (value) {
+  let secondTime = parseInt(value, 10); // 秒
+  let minuteTime = 0;
+  let hourTime = 0;
+  if (secondTime > 60) {
+    minuteTime = parseInt(secondTime / 60, 10);
+    secondTime = parseInt(secondTime % 60, 10);
+    hourTime = parseInt(minuteTime / 60, 10);
+    minuteTime = parseInt(minuteTime % 60, 10);
+  }
+  if (hourTime >= 10) {
+    hourTime = `${hourTime}`;
+  } else {
+    hourTime = `0${hourTime}`;
+  }
+  if (minuteTime >= 10) {
+    minuteTime = `${minuteTime}`;
+  } else {
+    minuteTime = `0${minuteTime}`;
+  }
+  if (secondTime >= 10) {
+    secondTime = `${secondTime}`;
+  } else {
+    secondTime = `0${secondTime}`;
+  }
+  return `${hourTime}:${minuteTime}:${secondTime}`;
 };

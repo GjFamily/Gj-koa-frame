@@ -3,8 +3,8 @@ const oauth = require('./oauth');
 const api = require('../../api');
 // const user_model = require('../../../models/user');
 
+const server_url = 'https://openapi.alipay.com/gateway.do';
 const Client = function ({
-  server_url,
   app_id,
   private_key,
   alipay_public_key,
@@ -12,7 +12,6 @@ const Client = function ({
   encryptKey,
   encryptType,
 }) {
-  this.server_url = server_url;
   this.app_id = app_id;
   this.private_key = private_key;
   this.connectTimeout = 3000;
@@ -68,13 +67,10 @@ Client.prototype.request = function (data, app_auth_token) {
   data.sign = this.getSignature(data);
   data.sign_type = this.sign_type;
   if (app_auth_token) data.app_auth_token = app_auth_token;
-  return api.post(this.server_url, data).then((response) => {
-    return response.body;
+  return api.post(server_url, data).then(({ body }) => {
+    return body;
   });
 };
 Object.assign(Client.prototype, pay, oauth);
 module.exports = Client;
 module.exports.source = 'alipay';
-module.exports.GENDER = {
-
-};

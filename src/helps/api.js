@@ -7,11 +7,12 @@ const config = require('../config');
 
 function send(options) {
   return new Promise((resolve, reject) => {
-    debug(`request: ${options}`);
+    debug(options);
     request(options, (error, response) => {
       if (!error) {
         resolve({ body: response.body, res: response });
       } else {
+        debug(error);
         reject(error || new Error('接口请求错误'));
       }
     });

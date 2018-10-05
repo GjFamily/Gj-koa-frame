@@ -1,6 +1,7 @@
 
 import koaRouter from 'koa-router';
 import koaBetterBody from 'koa-better-body';
+import yaml from 'yaml';
 import debug from 'debug';
 import config from '../config';
 import parse from './controller';
@@ -19,12 +20,21 @@ export const TEXT_PRODUCE = 'text/plain';
 export const int = 'int';
 export const float = 'float';
 export const File = 'file';
+
+export const Path = 'path';
+export const Query = 'query';
+export const Header = 'header';
+export const Cookie = 'cookie';
+export const Body = 'body';
+export const Form = 'form';
+export const All = 'all';
+export const Cache = 'cache';
 const debuger = debug('app:swagger');
 const IN_MAP = {
-  path: 'path',
-  query: 'query',
-  header: 'header',
-  cookie: 'cookie',
+  [Path]: Path,
+  [Query]: Query,
+  [Header]: Header,
+  [Cookie]: Cookie,
 };
 
 const TYPE_MAP = {
@@ -55,21 +65,21 @@ function isEmptyObject(obj) {
   return true;
 }
 function formatPath(path) {
-  return path.replace(/:([^/?:&]+)(\/)?/, '{$1}');
+  return path.replace(/:([^/?:&]+)(\/)?/, '{$1}$2');
 }
 function fixParam(param, key) {
   if (!param.name) param.name = key;
   if (param.in) return param;
-  if (param.cache) param.in = 'cache';
-  else if (param.body) param.in = 'body';
-  else if (param.form) param.in = 'form';
+  if (param.cache) param.in = Cache;
+  else if (param.body) param.in = Body;
+  else if (param.form) param.in = Form;
   else if (param.file) {
-    param.in = 'file';
-  } else if (param.path) param.in = 'path';
-  else if (param.header) param.header = 'header';
-  else if (param.cookie) param.cookie = 'cookie';
-  else if (param.query) param.in = 'query';
-  else if (param.all) param.in = 'all';
+    param.in = File;
+  } else if (param.path) param.in = Path;
+  else if (param.header) param.header = Header;
+  else if (param.cookie) param.cookie = Cookie;
+  else if (param.query) param.in = Query;
+  else if (param.all) param.in = All;
   else throw new Error(`Swagger: param in error,must cache, form, file, path, query (${JSON.stringify(param)}`);
   return param;
 }
@@ -113,9 +123,9 @@ class SecurityManager {
     if (!list) {
       list = this.defaults;
     }
-    let key = list.join('');
+    let key = list.join(',');
     if (!this.generateMiddle[key]) {
-      this.generateMiddle[key] = authMiddleware(list, this.fail);
+      this.generateMiddle[key] = authMiddleware(list.map(row => this.middlewares[row]), this.fail);
     }
     return this.generateMiddle[key];
   }
@@ -129,7 +139,7 @@ export class SwaggerRouter {
   constructor(options) {
     options = options || {};
     let self = this;
-    let url = options.url || 'swagger.json';
+    let url = options.url || 'swagger';
     let tags = [];
     if (options.tags) {
       for (const i in options.tags) {
@@ -138,8 +148,8 @@ export class SwaggerRouter {
     }
 
     this.basePath = options.basePath || options.prefix;
-    this.url = `${this.basePath}/${url}`;
     this.name = options.name || options.title || '';
+    this.url = `${this.basePath}/${url}`;
     this.produce = options.produce || JSON_PRODUCE;
     this.consume = options.consume || JSON_CONSUME;
     this.tags = options.tags || {};
@@ -154,8 +164,8 @@ export class SwaggerRouter {
 
     this.router = koaRouter(options);
     if (config.debug || options.force) {
-      this.router.get(`/${url}`, function* () {
-        this.body = JSON.stringify({
+      let getInfo = () => {
+        return {
           openapi: '3.0.0',
           info: {
             title: options.title || 'title',
@@ -170,8 +180,17 @@ export class SwaggerRouter {
             securitySchemes: self.security.schemes(),
             schemas: self.definitions,
           },
-        }, null, 4);
+        };
+      };
+
+      this.router.get(`/${url}.json`, function* () {
+        this.body = JSON.stringify(getInfo(), null, 4);
       });
+      debuger(`Swagger register:${this.basePath}/${url}.json`);
+      this.router.get(`/${url}.yaml`, function* () {
+        this.body = yaml.stringify(getInfo());
+      });
+      debuger(`Swagger register:${this.basePath}/${url}.yaml`);
     }
   }
   registerServer(url, description, schema) {
@@ -224,45 +243,45 @@ export class SwaggerRouter {
   // option: security[], tags[],deprecated
   _parsePath(method, options) {
     let path = formatPath(options[0]);
-    let index = options.findIndex(item => item instanceof Object);
+    let index = options.findIndex(item => typeof (item) === 'object');
     if (index === -1) return;
     let option = options[index];
     if (!this.paths[path]) {
       this.paths[path] = {};
     }
     if (this.paths[path][method]) {
-      throw new Error(`Swagger parse:${path}:${method} exist!`);
+      throw new Error(`Swagger parse:${method}:${path} exist!`);
     }
     if (isEmptyObject(option.responses)) {
-      throw new Error(`Swagger: ${path}:${method} responses not defined`);
+      throw new Error(`Swagger: ${method}:${path} responses not defined`);
     }
     if (!option.controller) {
-      throw new Error(`Swagger: ${path}:${method} controller not defined`);
+      throw new Error(`Swagger: ${method}:${path} controller not defined`);
     }
-    debuger(`Swagger parse:${path}:${method}`);
+    debuger(`Swagger parse:${method}:${path}`);
 
     let controller = option.controller instanceof Array ? option.controller : [option.controller];
     let consume = option.consume || this.consume;
     let produce = option.product || this.produce;
     let parameters = [];
     let body = [];
-    if (option.params && option.params.length > 0) {
+    if (option.params) {
       for (const key in option.params) {
         let param = option.params[key];
         fixParam(param, key);
-        if (param.in === 'cache') continue;
-        if (param.in === 'file') {
+        if (param.in === Cache) continue;
+        if (param.in === File) {
           consume = FILE_CONSUME;
           // 添加body解析，添加在controller之前
           options.splice(index, 0, koaBetterBody());
           index += 1;
-        } else if (param.in === 'form' && consume !== FORM_CONSUME && consume !== FILE_CONSUME) {
+        } else if (param.in === Form && consume !== FORM_CONSUME && consume !== FILE_CONSUME) {
           consume = FORM_CONSUME;
         }
         if (IN_MAP[param.in]) {
-          parameters.push();
-        } else if (param.in === 'all') {
-          body = param;
+          parameters.push(param);
+        } else if (param.in === All) {
+          body = param.schema;
         } else if (body instanceof Array) {
           body.push(param);
         }
@@ -280,7 +299,7 @@ export class SwaggerRouter {
     let settings = {
       summary: option.summary || '',
       description: option.description || '',
-      parameters,
+      parameters: parameters.map(p => this._parseParam(p)),
       responses: this._parseResponse(produce, option.responses, path),
     };
     if (option.deprecated) settings.deprecated = true;
@@ -300,7 +319,7 @@ export class SwaggerRouter {
     let p = {
       name: param.name,
       in: IN_MAP[param.in],
-      required: param.required,
+      required: param.in === Path ? true : !!param.required,
       schema: this._parseField(param.name, param),
     };
     if (param.deprecated) p.deprecated = true;
@@ -415,6 +434,7 @@ export class SwaggerRouter {
         content: this._parseContent(mediaType, body, pathToAlias(path)),
       };
     } else if (body instanceof Object) {
+      console.log(body);
       settings.requestBody = {
         description: body.description,
         required: true,
@@ -430,7 +450,7 @@ export class SwaggerRouter {
   }
   _parseSecurity(settings, security) {
     if (security) {
-      let result = security.filter(s => this.security[s]);
+      let result = security.filter(s => this.security.middlewares[s]);
       settings.security = result.map((s) => { return { [s]: [] }; });
       return this.security.middleware(result);
     } else {
@@ -453,7 +473,7 @@ export class SwaggerConfig {
     let self = this;
     this.dom_id = options.dom_id || '#swagger-ui';
     this.validatorUrl = options.validatorUrl || 'https://online.swagger.io/validator';
-    this.url = options.url || 'swagger-config.json';
+    this.url = options.url || 'swagger-config';
     this.urls = [];
     this.router = koaRouter(options);
     this.list = [];
@@ -461,23 +481,31 @@ export class SwaggerConfig {
     this.contact = options.contact || {};
 
     if (config.debug || options.force) {
-      this.router.get(`/${this.url}`, function* () {
-        this.body = JSON.stringify({
+      let getInfo = () => {
+        return {
           urls: self.urls,
           dom_id: self.dom_id,
           validatorUrl: self.validatorUrl,
-        });
+        };
+      };
+      this.router.get(`/${this.url}.json`, function* () {
+        this.body = JSON.stringify(getInfo(), null, 4);
       });
+      debuger(`SwaggerConfig register:/${this.url}.json`);
+      this.router.get(`/${this.url}.yaml`, function* () {
+        this.body = yaml.stringify(getInfo());
+      });
+      debuger(`SwaggerConfig register:/${this.url}.yaml`);
       this.list.push(this.router);
     }
   }
   addRouters(...routers) {
     routers.forEach((router) => {
       this.list.push(router);
-      if (!router.url) return;
+      if (!router.setParent) return;
       router.setParent(this);
       this.urls.push({
-        url: router.url,
+        url: `${router.url}.yaml`,
         name: router.name,
       });
     });
