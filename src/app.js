@@ -1,9 +1,10 @@
-const routes = require('./routes');
-const messages = require('./messages');
+
 const middlewares = require('koa-middlewares');
-// const path = require('path');
+const path = require('path');
 // const fs = require('fs');
 const koa = require('koa');
+const routes = require('./routes');
+const messages = require('./messages');
 const config = require('./config');
 const logger = require('./tools/logger');
 const tools = require('./helps/tools');
@@ -26,7 +27,12 @@ app.use(function* middleware(next) {
   if (this.request.is('multipart/*')) this.disableBodyParser = true;
   return yield next;
 });
-app.use(middlewares.bodyParser());
+app.use(middlewares.bodyParser({
+  enableTypes: ['json', 'form', 'text'],
+  extendTypes: {
+    text: ['text/xml'],
+  },
+}));
 /**
  * logger
  */
@@ -35,8 +41,21 @@ if (config.debug) {
   // 跨域
   app.use(function* middleware(next) {
     this.set('Access-Control-Allow-Origin', '*');
-    yield next;
+    if (this.method === 'OPTIONS') {
+      // Preflight Request
+      if (!this.get('Access-Control-Request-Method')) {
+        yield next();
+      }
+
+      // Access-Control-Allow-Headers
+      this.set('Access-Control-Allow-Headers', this.get('Access-Control-Request-Headers'));
+
+      this.status = 204; // No Content
+    } else {
+      yield next;
+    }
   });
+  app.use(middlewares.staticCache(path.join(__dirname, '..', 'swagger'), { prefix: '/swagger', alias: { '\\': '\\index.html', '/': '/index.html' }, preload: true }));
   app.use(middlewares.logger());
   // app.use(logger.requestIdContext());
   app.use(logger.print());
