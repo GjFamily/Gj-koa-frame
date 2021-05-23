@@ -19,6 +19,15 @@
     "no-underscore-dangle": "off",
     "no-nested-ternary": "off",
     "max-len": "off",
-    "prefer-const": "off"
+    "prefer-const": "off",
+    "import/no-named-as-default-member": "off",
+    "arrow-parens": "off",
+    "curly": "off",
+    "space-before-function-paren": "off",
+    "generator-star-spacing": "off",
+    "no-console": "off",
+    "linebreak-style": "off",
+    "class-methods-use-this": "off",
+    "eqeqeq": "off"
   }
 }

@@ -5,7 +5,7 @@ module.exports.jsApiConfig = function* ({ url }) {
   let noncestr = 'Wm3WZYTPz0wzccnW';
   let timestamp = new Date().getRoughTime();
   let signature = getSignature(noncestr, timestamp, url, ticket);
-  return {}
+  return { timestamp, nonceStr, signature };
 };
 /**
  *

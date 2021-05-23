@@ -311,20 +311,40 @@ module.exports.refundTrade = function* ({ pay_id, transaction_no, pid, money, re
  * @param notify_url
  * @returns {{appid: (*|string|string|string), nonce_str, timeStamp, package: string}}
  */
-module.exports.wapTrade = function* ({ pay_id, pid, money, subject, body, ip, notify_url, open_id }) {
+module.exports.jsTrade = function* ({ pay_id, pid, money, subject, body, ip, notify_url, open_id }) {
   let info = yield this.unifiedTrade({ pay_id, pid, money, subject, body, ip, notify_url, trade_type: 'JSAPI', open_id })
   if (info.status == 'ok') {
     let data = {
-      appid: this.app_id,
-      nonce_str: getNonce(),
-      timeStamp: Date.nowTime(),
+      appId: this.app_id,
+      nonceStr: getNonce(),
+      timeStamp: Date.nowTime().toString(),
+      signType: 'MD5',
       package: 'prepay_id=' + info.response.prepay_id
     }
     data.paySign = getTradeSignature(data, this.app_key);
-    data.signType = 'MD5';
 
     // 只用将data参数提交，返回值写入info.code，将info返回
     info.request = data;
+    info.response = null;
+  }
+  return info
+};
+/**
+ * wap网页端跳转
+ * @param pay_id
+ * @param pid
+ * @param money
+ * @param subject
+ * @param body
+ * @param ip
+ * @param notify_url
+ * @returns {{appid: (*|string|string|string), nonce_str, timeStamp, package: string}}
+ */
+module.exports.wapTrade = function* ({ pay_id, pid, money, subject, body, ip, notify_url }) {
+  let info = yield this.unifiedTrade({ pay_id, pid, money, subject, body, ip, notify_url, trade_type: 'MWEB' })
+  if (info.status == 'ok') {
+    // 只用将data参数提交，返回值写入info.code，将info返回
+    info.request = mweb_url;
     info.response = null;
   }
   return info

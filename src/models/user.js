@@ -1,5 +1,4 @@
-const { BaseModel, Schema } = require('../helps/model');
-// const { executor } = require('../helps/model');
+import { BaseModel, Schema } from '../helps/model';
 
 const schema = new Schema({
   primary: 'id',

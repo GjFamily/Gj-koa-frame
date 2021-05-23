@@ -1,13 +1,16 @@
 {
   "presets": [
-    ["env", {
-      "targets": {
-        "node": "8.10"
-      },
-      "debug": false,
-      "useBuiltIns": true,
-      "include": []
-    }],
+    [
+      "env",
+      {
+        "targets": {
+          "node": "8.10"
+        },
+        "debug": false,
+        "useBuiltIns": true,
+        "include": []
+      }
+    ],
     "stage-0"
   ],
   "plugins": []

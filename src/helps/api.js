@@ -3,6 +3,8 @@
  */
 const debug = require('debug')('app:debug');
 const request = require('request');
+const http = require('http');
+const zlib = require('zlib');
 const config = require('../config');
 
 function send(options) {
@@ -10,6 +12,7 @@ function send(options) {
     debug(options);
     request(options, (error, response) => {
       if (!error) {
+        console.log('send', response.body);
         resolve({ body: response.body, res: response });
       } else {
         debug(error);
@@ -77,6 +80,63 @@ function get(url, data, headers, options) {
   return send(options);
 }
 
+function getJson(url) {
+  return new Promise((resolve, reject) => {
+    const req = http.get(url, (res) => {
+      const { statusCode } = res;
+      const contentType = res.headers['content-type'];
+
+      let error;
+      if (statusCode !== 200) {
+        error = new Error('Request Failed.\n' +
+          `Status Code: ${statusCode}`);
+      } else if (!/^application\/json/.test(contentType)) {
+        error = new Error('Invalid content-type.\n' +
+          `Expected application/json but received ${contentType}`);
+      }
+      if (error) {
+        console.error(error.message);
+        // Consume response data to free up memory
+        res.resume();
+        reject(error);
+        return;
+      }
+
+      let rawData = '';
+      let output = null;
+
+      try {
+        if (res.headers['content-encoding'] === 'gzip') {
+          const gzip = zlib.createGunzip();
+          res.pipe(gzip);
+          output = gzip;
+        } else {
+          output = res;
+        }
+        output.on('data', (chunk) => {
+          chunk = chunk.toString('utf-8');
+          rawData += chunk;
+        });
+        output.on('end', () => {
+          const parsedData = JSON.parse(rawData);
+          resolve(parsedData);
+        });
+      } catch (e) {
+        console.log(e);
+        reject(e);
+      }
+    });
+    req.setTimeout(3000, () => {
+      req.abort();
+      reject(new Error('time-out'));
+    });
+    req.on('error', (e) => {
+      req.abort();
+      reject(e);
+    });
+  });
+}
+
 function wrap_get(server, api, data, d, buffer) {
   if (config.NODE_ENV === 'test') return Promise.resolve(d);
   return get(`http://${server.host}:${server.port}${api}`, data, { Token: server.token, 'Content-type': 'application/json' }).then(({ body }) => {
@@ -128,6 +188,7 @@ module.exports.post = post;
 module.exports.put = put;
 module.exports.form = form;
 module.exports.get = get;
+module.exports.getJson = getJson;
 module.exports.wrap_get = wrap_get;
 module.exports.wrap_post = wrap_post;
 module.exports.wrap_post_form = wrap_post_form;

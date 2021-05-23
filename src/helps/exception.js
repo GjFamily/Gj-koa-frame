@@ -12,10 +12,10 @@
  */
 function generate(no, type, show, log) {
   return (info, detail) => {
-    const err = new Error(show && (info instanceof String) ? info : type);
+    const err = new Error(show && (typeof (info) === 'string') ? info : type);
     err.no = no;
     if (show) {
-      if (info instanceof String) {
+      if (typeof (info) === 'string') {
         err.info = detail;
       } else {
         err.info = info;

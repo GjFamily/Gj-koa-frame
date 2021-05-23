@@ -1,7 +1,7 @@
-// const config = require('./config');
+import tools from './helps/tools';
+import Agent from './helps/agent';
 
-const tools = require('./helps/tools');
-const agent = require('./helps/agent')();
+const agent = Agent();
 
 tools.extend();
 

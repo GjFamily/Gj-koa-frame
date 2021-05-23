@@ -2,17 +2,23 @@
  * Created by gaojie on 2017/4/3.
  */
 const config = require('./../../config');
-const weixin_client = require('./../../helps/third/weixin');
-const alipay_client = require('./../../helps/third/alipay');
+const wechat = require('./../../helps/third/wechat');
+const alipay = require('./../../helps/third/alipay');
 
+let wechat_client = require('./../api/wechat').default;
+let wechat_h5_client = require('./../api/wechat').public_client;
+// let alipay_client = require('./../api/alipay').default;
+let alipay_client = {};
 const pay_model = require('./../../models/pay');
 const { ValidException, EmptyException, SystemException } = require('../../helps/exception');
 
-weixin_client.payInit(config.weixin.pid, config.weixin.app_key);
+wechat_client.payInit(config.wechat.pid, config.wechat.app_key);
+wechat_h5_client.payInit(config.wechat.pid, config.wechat.app_key);
+// alipay_client.payInit(config.alipay.pid);
 // 统一处理第三方交易流程
 const SOURCE = {
-  WEIXIN: weixin_client.source,
-  // ALIPAY: alipay.source,
+  WECHAT: wechat.source,
+  ALIPAY: alipay.source,
   LOCAL: 'local',
 };
 
@@ -22,18 +28,18 @@ const CHANNEL_MAP = {
   [pay_model.CHANNEL.alipay_wap]: SOURCE.ALIPAY,
   [pay_model.CHANNEL.alipay_bar]: SOURCE.ALIPAY,
   [pay_model.CHANNEL.alipay_qr]: SOURCE.ALIPAY,
-  [pay_model.CHANNEL.weixin_app]: SOURCE.WEIXIN,
-  [pay_model.CHANNEL.weixin_js]: SOURCE.WEIXIN,
-  [pay_model.CHANNEL.weixin_wap]: SOURCE.WEIXIN,
-  [pay_model.CHANNEL.weixin_bar]: SOURCE.WEIXIN,
-  [pay_model.CHANNEL.weixin_lite]: SOURCE.WEIXIN,
-  [pay_model.CHANNEL.weixin_qr]: SOURCE.WEIXIN,
+  [pay_model.CHANNEL.wechat_app]: SOURCE.WECHAT,
+  [pay_model.CHANNEL.wechat_js]: SOURCE.WECHAT,
+  [pay_model.CHANNEL.wechat_wap]: SOURCE.WECHAT,
+  [pay_model.CHANNEL.wechat_bar]: SOURCE.WECHAT,
+  [pay_model.CHANNEL.wechat_lite]: SOURCE.WECHAT,
+  [pay_model.CHANNEL.wechat_qr]: SOURCE.WECHAT,
   [pay_model.CHANNEL.cash]: SOURCE.LOCAL,
   [pay_model.CHANNEL.test]: SOURCE.LOCAL,
 };
 
 const SOURCE_MAP = {
-  [SOURCE.WEIXIN]: '微信支付',
+  [SOURCE.WECHAT]: '微信支付',
   [SOURCE.ALIPAY]: '支付宝支付',
   [SOURCE.LOCAL]: '现金',
 };
@@ -46,10 +52,10 @@ const trade = {};
  */
 function getHandle(channel) {
   switch (channel) {
-    case SOURCE.WEIXIN:
-      return weixin_client;
-      // case SOURCE.ALIPAY:
-      //   return alipay_client;
+    case SOURCE.WECHAT:
+      return wechat_client;
+    // case SOURCE.ALIPAY:
+    //   return alipay_client;
     default:
       if (CHANNEL_MAP[channel]) return getHandle(CHANNEL_MAP[channel]);
       throw ValidException('第三方支付错误');
@@ -74,14 +80,14 @@ function* end(pay, info) {
     channel === pay_model.CHANNEL.alipay_pc ||
     channel === pay_model.CHANNEL.alipay_wap) {
     result = yield alipay_client.closeTrade({ pay_id, transaction_no, pid });
-  } else if (channel === pay_model.CHANNEL.weixin_bar) {
+  } else if (channel === pay_model.CHANNEL.wechat_bar) {
     result = yield alipay_client.cancelTrade({ pay_id, transaction_no, pid });
-  } else if (channel === pay_model.CHANNEL.weixin_js ||
-    channel === pay_model.CHANNEL.weixin_app ||
-    channel === pay_model.CHANNEL.weixin_wap ||
-    channel === pay_model.CHANNEL.weixin_qr ||
-    channel === pay_model.CHANNEL.weixin_lite) {
-    result = yield weixin_client.closeTrade({ pay_id, transaction_no, pid });
+  } else if (channel === pay_model.CHANNEL.wechat_js ||
+    channel === pay_model.CHANNEL.wechat_app ||
+    channel === pay_model.CHANNEL.wechat_wap ||
+    channel === pay_model.CHANNEL.wechat_qr ||
+    channel === pay_model.CHANNEL.wechat_lite) {
+    result = yield wechat_client.closeTrade({ pay_id, transaction_no, pid });
   }
   if (result.status === 'close') {
     yield pay.close(transaction_no, info);
@@ -334,21 +340,21 @@ module.exports.preprocess = function* ({ instance, kwargs }) {
     }
   }
 
-  if (channel === pay_model.CHANNEL.alipay_bar || channel === pay_model.CHANNEL.weixin_bar) {
+  if (channel === pay_model.CHANNEL.alipay_bar || channel === pay_model.CHANNEL.wechat_bar) {
     if (!kwargs.auth_code) throw ValidException('需要授权码');
   }
   if (channel === pay_model.CHANNEL.alipay_wap) {
     if (!kwargs.return_url) throw ValidException('需要返回信息');
   }
-  if (channel === pay_model.CHANNEL.weixin_wap || channel === pay_model.CHANNEL.weixin_lite) {
+  if (channel === pay_model.CHANNEL.wechat_js || channel === pay_model.CHANNEL.wechat_lite) {
     if (!kwargs.open_id) throw ValidException('需要open_id');
   }
-  if (channel === pay_model.CHANNEL.weixin_js ||
-    channel === pay_model.CHANNEL.weixin_qr ||
-    channel === pay_model.CHANNEL.weixin_wap ||
-    channel === pay_model.CHANNEL.weixin_app ||
-    channel === pay_model.CHANNEL.weixin_lite ||
-    channel === pay_model.CHANNEL.weixin_bar) {
+  if (channel === pay_model.CHANNEL.wechat_js ||
+    channel === pay_model.CHANNEL.wechat_qr ||
+    channel === pay_model.CHANNEL.wechat_wap ||
+    channel === pay_model.CHANNEL.wechat_app ||
+    channel === pay_model.CHANNEL.wechat_lite ||
+    channel === pay_model.CHANNEL.wechat_bar) {
     if (!kwargs.client_ip) throw ValidException('需要客户端ip');
   }
   if (!kwargs.client_ip) throw ValidException('需要客户端ip');
@@ -389,9 +395,9 @@ module.exports.process = function* ({ instance, pay, kwargs }) {
     yield pay.setInfo(info);
     // 循环查询直到得到结果
     return yield trade.client({ instance, pay, info });
-  } else if (channel === pay_model.CHANNEL.weixin_bar) {
+  } else if (channel === pay_model.CHANNEL.wechat_bar) {
     // 条码支付
-    const info = yield weixin_client.payTrade({
+    const info = yield wechat_client.payTrade({
       pay_id,
       auth_code: kwargs.auth_code,
       pid,
@@ -405,8 +411,8 @@ module.exports.process = function* ({ instance, pay, kwargs }) {
     return yield trade.client({ instance, pay, info });
   } else {
     let info;
-    if (channel === pay_model.CHANNEL.weixin_app) {
-      info = yield weixin_client.appTrade({
+    if (channel === pay_model.CHANNEL.wechat_app) {
+      info = yield wechat_client.appTrade({
         pay_id,
         pid,
         money,
@@ -415,8 +421,18 @@ module.exports.process = function* ({ instance, pay, kwargs }) {
         notify_url,
         ip: kwargs.client_ip,
       });
-    } else if (channel === pay_model.CHANNEL.weixin_js) {
-      info = yield weixin_client.wapTrade({
+    } else if (channel === pay_model.CHANNEL.wechat_wap) {
+      info = yield wechat_h5_client.wapTrade({
+        pay_id,
+        pid,
+        money,
+        subject,
+        body,
+        notify_url,
+        ip: kwargs.client_ip,
+      });
+    } else if (channel === pay_model.CHANNEL.wechat_js) {
+      info = yield wechat_h5_client.jsTrade({
         pay_id,
         pid,
         money,
@@ -426,8 +442,8 @@ module.exports.process = function* ({ instance, pay, kwargs }) {
         ip: kwargs.client_ip,
         open_id: kwargs.open_id,
       });
-    } else if (channel === pay_model.CHANNEL.weixin_qr) {
-      info = yield weixin_client.preTrade({
+    } else if (channel === pay_model.CHANNEL.wechat_qr) {
+      info = yield wechat_client.preTrade({
         pay_id,
         pid,
         money,
@@ -436,8 +452,8 @@ module.exports.process = function* ({ instance, pay, kwargs }) {
         notify_url,
         ip: kwargs.client_ip,
       });
-    } else if (channel === pay_model.CHANNEL.weixin_lite) {
-      info = yield weixin_client.liteTrade({
+    } else if (channel === pay_model.CHANNEL.wechat_lite) {
+      info = yield wechat_client.liteTrade({
         pay_id,
         pid,
         money,

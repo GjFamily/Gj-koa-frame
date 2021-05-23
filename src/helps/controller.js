@@ -69,7 +69,7 @@ const parse = function (cb, opts) {
         const r = (cb[index]).call(this, kwarg);
         kwarg = yield r;
       }
-      if (ctx.body) return;
+      if (ctx.body || ctx.body === '') return;
       ctx.body = {
         status: 200,
         result: kwarg,
@@ -133,7 +133,7 @@ module.exports.pageResponse = function (result) {
       type: Object,
       required: true,
       object: {
-        total: {
+        count: {
           type: 'int',
           required: true,
         },

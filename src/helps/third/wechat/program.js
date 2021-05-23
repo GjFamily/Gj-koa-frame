@@ -1,4 +1,7 @@
 /* eslint-disable */
+
+const fs = require('fs');
+
 /**
  * 获取用户登录凭证：小程序内部
  * @param code
@@ -12,6 +15,46 @@ module.exports.miniCode = function* ({ code }) {
     expires_in: expires_in
   }
 };
+
+module.exports.getMediaId = function* ({ file }) {
+  let result = yield this.cache.get('wechat://media_id/' + this.app_id + '/' + file);
+  if (result) return result;
+  const form = {
+    file: fs.createReadStream(file)
+  };
+  const { access_token } = yield getAccessToken(this);
+  return yield this.form('/cgi-bin/media/upload?access_token=' + access_token + '&type=image', form).then(({ media_id }) => {
+    return this.cache.set('wechat://media_id/' + this.app_id + '/' + file, media_id, 86400).then(() => {
+      return media_id
+    })
+  })
+}
+
+module.exports.sendTextMessage = function* ({ text, open_id }) {
+  const message = {
+    "touser": open_id,
+    "msgtype": "text",
+    "text":
+    {
+      "content": text
+    }
+  };
+  const { access_token } = yield getAccessToken(this);
+  return yield this.post('/cgi-bin/message/custom/send?access_token=' + access_token, message)
+}
+
+module.exports.sendImageMessage = function* ({ mediaId, open_id }) {
+  const message = {
+    "touser": open_id,
+    "msgtype": "image",
+    "image":
+    {
+      "media_id": mediaId
+    }
+  };
+  const { access_token } = yield getAccessToken(this);
+  return yield this.post('/cgi-bin/message/custom/send?access_token=' + access_token, message)
+}
 
 function* getSeesionKey(client, code) {
   let data = {
@@ -39,10 +82,10 @@ module.exports.miniSendMessage = function* ({ open_id, template_id, page, form_i
     "page": page,
     "form_id": form_id,
     "data": data
-      // "keyword1": {
-      //   "value": "339208499",
-      //   "color": "#173177"
-      // },
+    // "keyword1": {
+    //   "value": "339208499",
+    //   "color": "#173177"
+    // },
   }
   let { access_token } = yield getAccessToken(this);
   return yield this.post('/cgi-bin/message/wxopen/template/send?access_token=' + access_token, info).then((result) => {
@@ -67,7 +110,7 @@ module.exports.miniMessageList = function* () {
  */
 function* getAccessToken(client, f) {
   if (!f) {
-    let result = yield client.cache.get('weixin://access_token/' + client.app_id)
+    let result = yield client.cache.get('wechat://access_token/' + client.app_id)
     if (result) return {
       access_token: result
     };
@@ -78,7 +121,7 @@ function* getAccessToken(client, f) {
     secret: client.app_secret
   };
   return yield client.request('/cgi-bin/token', data).then(({ access_token, expires_in }) => {
-    return client.cache.set('weixin://access_token/' + client.app_id, access_token, expires_in - 100).then(() => {
+    return client.cache.set('wechat://access_token/' + client.app_id, access_token, expires_in - 100).then(() => {
       return {
         access_token
       }

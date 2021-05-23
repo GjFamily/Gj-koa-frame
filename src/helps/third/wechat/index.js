@@ -30,6 +30,12 @@ Client.prototype.post = function (url, data, headers, options) {
       return JSON.parse(body);
     });
 };
+Client.prototype.form = function (url, data, headers, options) {
+  return api.form(server_url + url, data, headers, options)
+    .then(({ body }) => {
+      return JSON.parse(body);
+    });
+};
 Client.prototype.payPost = function (url, data, headers, options) {
   return api.post(pay_url + url, data, headers, options).then(({ body }) => {
     return body;

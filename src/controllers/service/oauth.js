@@ -1,15 +1,15 @@
 import config from '../../config';
 // import wechat_client from './../api/wechat';
-import { server_client as wechat_server_client } from './../api/wechat';
+import { server_client as wechat_server_client, public_client as wechat_public_client } from './../api/wechat';
 import qq_client from './../api/qq';
 import taobao_client from './../api/taobao';
 import userModel from './../../models/user';
 import { ValidException } from '../../helps/exception';
 
-
 // 子渠道使用下划线分割，可以绑定union_id
 const CHANNEL_MAP = {
   wechat_pc: wechat_server_client,
+  wechat_h5: wechat_public_client,
   taobao: taobao_client,
   qq: qq_client,
 };
@@ -19,9 +19,8 @@ function getClient(channel) {
   return CHANNEL_MAP[channel];
 }
 function getWhere(channel, { open_id, union_id }) {
-  let where = [];
-  where.push([`${channel}_open_id`, '=', open_id]);
-  if (union_id) where.push([`${channel.split('_')[0]}_union_id`, '=', union_id]);
+  let where = [[`${channel}_open_id`, '=', open_id]];
+  if (union_id) where = [[`${channel.split('_')[0]}_union_id`, '=', union_id]];
   return where;
 }
 function getCallbackUrl(channel) {
@@ -38,9 +37,11 @@ function generateData(channel, { nick_name, avatar, open_id, union_id }) {
   return data;
 }
 
-export function* redirect({ channel, url }) {
+export function* redirect({ channel, url, protocol }) {
   let client = getClient(channel);
-  url = client.getOAuthUrl(url || getCallbackUrl(channel));
+  let u = url || getCallbackUrl(channel);
+  u = u.replace('http', 'https').replace('https', protocol);
+  url = client.getOAuthUrl(u);
   this.response.redirect(url);
 }
 
@@ -83,4 +84,22 @@ export function* callbackWrap({ channel, code, url, cb }) {
     return {};
   }
   return yield cb(result);
+}
+
+export function* login({ channel, code }) {
+  let client = getClient(channel);
+  let result = null;
+  result = yield client.webAuthorize({ code });
+  let where = getWhere(channel, result);
+  let user = yield userModel.one({
+    where,
+  });
+  let data = generateData(channel, result);
+  if (!user) {
+    user = yield userModel.add(data);
+  } else {
+    yield userModel.put(user.id, data);
+    user = yield userModel.get(user.id);
+  }
+  return user.info();
 }

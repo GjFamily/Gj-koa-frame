@@ -319,7 +319,7 @@ export class SwaggerRouter {
     let p = {
       name: param.name,
       in: IN_MAP[param.in],
-      required: param.in === Path ? true : !!param.required,
+      required: param.required,
       schema: this._parseField(param.name, param),
     };
     if (param.deprecated) p.deprecated = true;

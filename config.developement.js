@@ -39,8 +39,6 @@ module.exports = Object.assign({
       pass: 'Thomas-1974'
     }
   },
-  nav_max_category: 12,
-  hash_prefix: 'huoxing',
   upload_path: '../upload/',
   upload_url: '/upload/'
 }, local);

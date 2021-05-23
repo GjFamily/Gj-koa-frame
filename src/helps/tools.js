@@ -6,6 +6,7 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 const process = require('child_process');
+const xml2js = require('xml2js');
 
 // 加载扩展功能
 module.exports.extend = function () {
@@ -72,7 +73,7 @@ module.exports.extend = function () {
       format = format.replace(RegExp.$1, (`${this.getFullYear()}`).substr(4 - RegExp.$1.length));
     }
     for (const k in o) {
-      if (new RegExp(`(${k}`).test(format)) {
+      if (new RegExp(`(${k})`).test(format)) {
         format = format.replace(RegExp.$1, RegExp.$1.length === 1 ? o[k] : (`00${o[k]}`).substr((`${o[k]}`).length));
       }
     }
@@ -181,7 +182,7 @@ module.exports.rmdirSync = function (dirname) {
       d.unshift(u); // 收集目录
       inner(u, d);
     } else if (stat.isFile()) {
-      fs.unlinkSync(url); // 直接删除文件
+      fs.unlinkSync(u); // 直接删除文件
     }
   }
 
@@ -210,7 +211,7 @@ module.exports.writeFile = function (file_path, buffer, over = false) {
   if (fs.existsSync(file_path)) {
     if (over) {
       // 更新
-      exports.unlinkSync(file_path);
+      fs.unlinkSync(file_path);
     } else {
       throw new Error('文件存在');
     }
@@ -228,7 +229,7 @@ module.exports.saveFile = function (file_path, file, over = false) {
   if (fs.existsSync(file_path)) {
     if (over) {
       // 更新
-      exports.unlinkSync(file_path);
+      fs.unlinkSync(file_path);
     } else {
       throw new Error('文件存在');
     }
@@ -242,12 +243,72 @@ module.exports.saveFile = function (file_path, file, over = false) {
     throw new Error('上传失败');
   }
 };
+module.exports.copyFile = function (srcPath, tarPath, cb) {
+  const rs = fs.createReadStream(srcPath);
+  rs.on('error', err => {
+    if (err) {
+      console.log('read error', srcPath);
+    }
+    if (cb) cb(err);
+  });
+
+  const ws = fs.createWriteStream(tarPath);
+  ws.on('error', err => {
+    if (err) {
+      console.log('write error', tarPath);
+    }
+    if (cb) cb(err);
+  });
+  ws.on('close', ex => {
+    if (cb) cb(ex);
+  });
+
+  rs.pipe(ws);
+};
+
+module.exports.copyFolder = function (srcDir, tarDir, cb) {
+  fs.readdir(srcDir, (e, files) => {
+    let count = 0;
+    let checkEnd = () => {
+      ++count;
+      if (count === files.length && cb) cb();
+    };
+
+    if (e) {
+      if (cb) cb(e);
+      return;
+    }
+
+    files.forEach(file => {
+      const srcPath = path.join(srcDir, file);
+      const tarPath = path.join(tarDir, file);
+
+      fs.stat(srcPath, (_, stats) => {
+        if (stats.isDirectory()) {
+          fs.mkdir(tarPath, err => {
+            if (err) {
+              if (cb) cb(err);
+              return;
+            }
+
+            exports.copyFolder(srcPath, tarPath, checkEnd);
+          });
+        } else {
+          exports.copyFile(srcPath, tarPath, checkEnd);
+        }
+      });
+    });
+
+    // 为空时直接回调
+    if (files.length === 0 && cb) cb();
+  });
+};
 
 module.exports.formatData = function (fields, data) {
   let _data = {};
   for (let i in fields) {
     let field = fields[i];
-    if (data[field] || data[field] === 0 || data[field] === '' || data[field] === null) {
+    if (data[field] || data[field] === 0) {
       _data[field] = data[field];
     }
   }
@@ -262,30 +323,53 @@ module.exports.listToMap = function (list, field) {
   return map;
 };
 
-module.exports.formatSeconds = function (value) {
-  let secondTime = parseInt(value, 10); // 秒
-  let minuteTime = 0;
-  let hourTime = 0;
-  if (secondTime > 60) {
-    minuteTime = parseInt(secondTime / 60, 10);
-    secondTime = parseInt(secondTime % 60, 10);
-    hourTime = parseInt(minuteTime / 60, 10);
-    minuteTime = parseInt(minuteTime % 60, 10);
-  }
-  if (hourTime >= 10) {
-    hourTime = `${hourTime}`;
+module.exports.getUploadPath = function (localPath, local) {
+  let dir = new Date(new Date().toLocaleDateString()).getTime() / 1000;
+  let file_path = '';
+  if (local) {
+    file_path = path.join(path.resolve('./', localPath), `${dir}`);
+    if (!fs.existsSync(file_path)) {
+      fs.mkdirSync(file_path);
+    }
   } else {
-    hourTime = `0${hourTime}`;
+    file_path = path.join(localPath, `${dir}`);
   }
-  if (minuteTime >= 10) {
-    minuteTime = `${minuteTime}`;
-  } else {
-    minuteTime = `0${minuteTime}`;
-  }
-  if (secondTime >= 10) {
-    secondTime = `${secondTime}`;
-  } else {
-    secondTime = `0${secondTime}`;
-  }
-  return `${hourTime}:${minuteTime}:${secondTime}`;
+  return file_path;
 };
+
+/**
+ * 解析xml格式未数组
+ * @param content
+ * @returns {Promise}
+ */
+module.exports.parseXML = function (content) {
+  return new Promise((resolve, reject) => {
+    xml2js.parseString(content, { explicitArray: false, ignoreAttrs: true }, (err, json) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(json.xml);
+      }
+    });
+  });
+};
+
+module.exports.toXML = function (params, main = false) {
+  const lines = [];
+  if (main) lines.push('<xml>');
+  for (let k in params) {
+    if (!params[k]) {
+      continue;
+    }
+    if (typeof params[k] === 'object') {
+      lines.push('<' + k + '>' + this.toXML(params[k], false) + '</' + k + '>');
+    } else if (typeof params[k] === 'number') {
+      lines.push('<' + k + '>' + params[k] + '</' + k + '>');
+    } else {
+      lines.push('<' + k + '><![CDATA[' + params[k] + ']]></' + k + '>');
+    }
+  }
+  if (main) lines.push('</xml>');
+  return lines.join('');
+};
+

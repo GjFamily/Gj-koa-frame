@@ -1,19 +1,18 @@
-const { Model, Schema } = require('../helps/model');
+import { BaseModel, Schema } from '../helps/model';
+import uid from 'uid-safe';
 
-const uid = require('uid-safe');
-
-const CHANNEL = {
+export const CHANNEL = {
   alipay_app: 'alipay_app', // 支付宝app
   alipay_wap: 'alipay_wap', // 支付宝手机网页
   alipay_pc: 'alipay_pc', // 支付宝电脑网站支付
   alipay_bar: 'alipay_bar', // 支付宝当面付，条码支付
   alipay_qr: 'alipay_qr', // 支付宝用户扫码支付
-  weixin_app: 'weixin_app', // 微信 APP 支付
-  weixin_js: 'weixin_js', // 微信公众号支付
-  weixin_bar: 'weixin_bar', // 微信公众号条码支付
-  weixin_wap: 'weixin_wap', // 微信 WAP 支付
-  weixin_qr: 'weixin_qr', // 微信用户扫码支付
-  weixin_lite: 'weixin_lite', // 微信小程序支付
+  wechat_app: 'wechat_app', // 微信 APP 支付
+  wechat_js: 'wechat_js', // 微信公众号支付
+  wechat_bar: 'wechat_bar', // 微信公众号条码支付
+  wechat_wap: 'wechat_wap', // 微信 WAP 支付
+  wechat_qr: 'wechat_qr', // 微信用户扫码支付
+  wechat_lite: 'wechat_lite', // 微信小程序支付
   test: 'test', // 测试渠道
   cash: 'cash', // 现金
 };
@@ -21,8 +20,8 @@ const CHANNEL = {
 // 模块需要获取pay_id,支持pay和payed接口
 // 模块需要account_id或者store_id 表明是商户收款
 // 模块有self，表明是自身收款
-const MODULE = {
-
+export const MODULE = {
+  ORDER: 'order',
 };
 
 const TRADE_STATUS = {
@@ -72,7 +71,7 @@ schema.methods.fast = function () {
 schema.methods.payed = function (transaction_no, result_info, finish = false) {
   this.transaction_no = transaction_no;
   this.result_info = JSON.stringify(result_info);
-  this.pay_time = Date.nowTime();
+  this.pay_time = new Date();
   this.trade_status = finish ? TRADE_STATUS.FINISH : TRADE_STATUS.SUCCESS;
   return this.save();
 };
@@ -164,7 +163,7 @@ schema.methods.getPayStatus = function () {
  */
 schema.methods.isPayed = function () {
   return this.trade_status === TRADE_STATUS.SUCCESS ||
-   this.trade_status === TRADE_STATUS.FINISH;
+    this.trade_status === TRADE_STATUS.FINISH;
 };
 /**
  * 判断该支付是否在支付中
@@ -172,7 +171,7 @@ schema.methods.isPayed = function () {
  */
 schema.methods.isPaying = function () {
   return this.trade_status === TRADE_STATUS.WAIT_BUYER_PAY ||
-   this.trade_status === TRADE_STATUS.ERROR;
+    this.trade_status === TRADE_STATUS.ERROR;
 };
 /**
  * 判断该支付是否无效
@@ -180,9 +179,9 @@ schema.methods.isPaying = function () {
  */
 schema.methods.isInvalid = function () {
   return this.trade_status === TRADE_STATUS.CLOSE ||
-  this.trade_status === TRADE_STATUS.CANCEL ||
-  this.trade_status === TRADE_STATUS.SYSTEM ||
-  this.trade_status === TRADE_STATUS.EXCEPTION;
+    this.trade_status === TRADE_STATUS.CANCEL ||
+    this.trade_status === TRADE_STATUS.SYSTEM ||
+    this.trade_status === TRADE_STATUS.EXCEPTION;
 };
 /**
  * 判断该支付是否需要再次撤销
@@ -192,7 +191,7 @@ schema.methods.isError = function () {
   return this.trade_status === TRADE_STATUS.ERROR;
 };
 
-const model = new Model('pay', schema);
+export const model = new Model('pay', schema);
 
 /**
  * 创建支付
@@ -207,8 +206,8 @@ const model = new Model('pay', schema);
  * @param currency
  * @returns {*}
  */
-model.make = function (money, channel, module, module_id, pid, subject, body, client_ip, currency = 'cny') {
-  return this.insert({
+export function make(money, channel, module, module_id, pid, subject, body, client_ip, currency = 'cny') {
+  return model.insert({
     id: uid.sync(24),
     channel,
     money,
@@ -221,21 +220,23 @@ model.make = function (money, channel, module, module_id, pid, subject, body, cl
     transaction_no: '',
     currency,
     trade_status: TRADE_STATUS.WAIT_BUYER_PAY,
-    pay_time: 0,
+    pay_time: null,
     pay_info: '',
     result_info: '',
   });
-};
+}
 
 /**
  * 获取支付
  * @param id
  * @returns {*}
  */
-model.get = function (id) {
-  return this.getByKey(id);
-};
+export function get(id) {
+  return model.findByKey(id);
+}
 
-module.exports = model;
-module.exports.CHANNEL = CHANNEL;
-module.exports.MODULE = MODULE;
+export default Object.assign(model, {
+  get,
+  make,
+});
+
